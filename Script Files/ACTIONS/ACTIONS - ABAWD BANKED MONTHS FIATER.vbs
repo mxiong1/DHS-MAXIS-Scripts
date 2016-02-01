@@ -44,12 +44,12 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 END IF
 'END FUNCTIONS LIBRARY BLOCK================================================================================================
 
-'Required for statistical purposes===========================================================================================	
-STATS_counter = 1				'sets the stats counter at one	
-STATS_manualtime = 225			'manual run time in seconds	
-STATS_denomination = "C"        'C is for each case	
-'END OF stats block==========================================================================================================	
-	
+'Required for statistical purposes==========================================================================================
+STATS_counter = 1                     	'sets the stats counter at one
+STATS_manualtime = 225                	'manual run time in seconds
+STATS_denomination = "C"       			'C is for each Case
+'END OF stats block=========================================================================================================			
+		
 '-------------------------------FUNCTIONS WE INVENTED THAT WILL SOON BE ADDED TO FUNCLIB
 FUNCTION date_array_generator(initial_month, initial_year, date_array)
 	'defines an intial date from the initial_month and initial_year parameters
@@ -712,7 +712,7 @@ For i = 0 to ubound(footer_month_array)
 		EMWritescreen ABAWD_months_array(i).SHEL_insa, 7, 29
 		EMWritescreen ABAWD_months_array(i).HEST_elect, 8, 29
 		EMWritescreen ABAWD_months_array(i).HEST_heat, 9, 29
-		EMWritescreen ABAWD_months_array(i).HEST_phone, 10, 29
+		EMWritescreen ABAWD_months_array(i).HEST_phone, 11, 29
 		EMWriteScreen ABAWD_months_array(i).SHEL_other, 12, 29
 		'this enters the proration date in the initial month'
 		IF abs(footer_month) = abs(left(proration_date, 2)) THEN
