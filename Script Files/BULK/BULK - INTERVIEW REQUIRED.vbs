@@ -66,9 +66,8 @@ EndDialog
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
 'Grabbing the worker's X number to autofill into the dialog 
-'CALL find_variable("User: ", worker_number, 7) 
-'worker_number_editbox = worker_number
-worker_number_editbox = "x127EJ6"
+CALL find_variable("User: ", worker_number, 7) 
+worker_number_editbox = worker_number
 
 'DISPLAYS DIALOG
 DO                              
@@ -89,27 +88,26 @@ If footer_selection = "Current month" then
 	footer_year = DatePart("YYYY", date)
 	footer_year = right(footer_year, 2)
 ELSEif footer_selection = "Current month plus one" then
- 	footer_month = dateadd("M", 1, date)
-	footer_month = datePart("M", date)
+	footer_month = dateadd("M", 1, date)
+	footer_month = datePart("M", footer_month)
 	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
 	footer_year = DatePart("YYYY", date)
 	footer_year = right(footer_year, 2)
-ELSEIF footer_selection = "Current month plus two" then 
+ELSEIF footer_selection = "Current month plus two" then
 	footer_month = dateadd("M", 2, date)
-	footer_month = datePart("M", date)
+	footer_month = datePart("M", footer_month)
 	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
 	footer_year = DatePart("YYYY", date)
 	footer_year = right(footer_year, 2)
 END IF 
 
-MsgBox footer_month & " " & footer_year
-stopscript
-
-'creating current month date for 
+'creating current month date for REVS panel 
 current_month = DatePart("M", date)
 IF len(current_month) = 1 THEN current_month = "0" & current_month
 current_year = DatePart("YYYY", date)
 current_year = right(current_year, 2)
+
+msgbox "Current date: " & current_month & " " & current_year
 		
 CALL check_for_MAXIS(false)		'Checking for active MAXIS session
 'We need to get back to SELF and manually update the footer month
@@ -123,13 +121,14 @@ If footer_selection = "Current month plus two" then
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
 	EMWriteScreen footer_month, 20, 55
 	EMWriteScreen footer_year, 20, 58
-	transmit
 ELSE 	
 	EMWriteScreen footer_month, 20, 43
 	EMWriteScreen footer_year, 20, 46
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
 END IF 
-MsgBox "nav test"
+transmit
+
+MsgBox "nav test for panel: " & REPT_panel & vbnewLIne & "footer month: " & footer_month & "/" & footer_year
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -276,5 +275,5 @@ FOR EACH case_number in prived_case_array
 	excel_row = excel_row + 1
 NEXT
 
-msgbox STATS_counter
+msgbox STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
 script_end_procedure("Success! The Excel file now has all of the cases that require interviews for renewals.  Please manually review the list of privileged cases.")
