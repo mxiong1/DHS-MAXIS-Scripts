@@ -57,16 +57,15 @@ DIM appointment_required_dialog, REPT_panel, MAXIS_footer_month, MAXIS_footer_ye
 'DIALOG'----------------------------------------------------------------------------------------------------
 BeginDialog appointment_required_dialog, 0, 0, 256, 80, "Appointment required dialog"
   DropListBox 70, 10, 60, 15, "REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
-  EditBox 210, 10, 20, 15, MAXIS_footer_month
-  EditBox 230, 10, 20, 15, MAXIS_footer_year
-  EditBox 70, 30, 180, 15, worker_number
+  EditBox 70, 30, 180, 15, worker_number_editbox
   ButtonGroup ButtonPressed
     OkButton 145, 50, 50, 15
     CancelButton 200, 50, 50, 15
   Text 5, 15, 55, 10, "Create list from:"
-  Text 140, 15, 65, 10, "Footer month/year:"
+  Text 150, 15, 45, 10, "Time period:"
   Text 5, 35, 60, 10, "Worker number(s):"
   Text 5, 50, 130, 25, "Enter 7 digits of each, (ex: x######). If entering multiple workers, separate each with a comma."
+  DropListBox 200, 10, 50, 15, "Select one..."+chr(9)+"Current month"+chr(9)+"Current month plus one"+chr(9)+"Current month plus two", footer_selection
 EndDialog
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
@@ -74,26 +73,20 @@ EndDialog
 EMConnect ""
 Call MAXIS_footer_finder(MAXIS_footer_month, MAXIS_footer_year)
 
+'Grabbing the worker's X number to autofill into the dialog 
+CALL find_variable("User: ", worker_number, 7) 
+worker_number = worker_number_editbox	
+
 'DISPLAYS DIALOG
 DO                              
 	err_msg = ""	
 	Dialog appointment_required_dialog	
 	If ButtonPressed = 0 then StopScript	
-	If worker_number = "" or len(worker_number) > 7 or len(worker_number) < 7 then err_msg = err_msg & vbNewLine & "* Enter a valid case number."	
+	If worker_number = "" or len(worker_number) <> then err_msg = err_msg & vbNewLine & "* Enter a valid case number."	
     If IsNumeric(MAXIS_footer_month) = False or len(MAXIS_footer_month) > 2 or len(MAXIS_footer_month) < 2 then err_msg = err_msg & vbNewLine & "* Enter a valid footer month."	
     If IsNumeric(MAXIS_footer_year) = False or len(MAXIS_footer_year) > 2 or len(MAXIS_footer_year) < 2 then err_msg = err_msg & vbNewLine & "* Enter a valid footer year."	
 	IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine	
 LOOP until err_msg = ""	
-
-'creating month plus 1 and plus 2
-cm_plus_1 = dateadd("M", 1, date)
-cm_plus_2 = dateadd("M", 2, date)
-'creating a last day of recert variable
-last_day_of_recert = DatePart("M", cm_plus_2) & "/01/" & DatePart("YYYY", cm_plus_2)
-last_day_of_recert = dateadd("D", -1, last_day_of_recert)
-
-'Grabbing the worker's X number.
-CALL find_variable("User: ", worker_number, 7)
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -115,13 +108,11 @@ objExcel.cells(1, 5).Font.Bold = TRUE
 objExcel.cells(1, 6).Value = "Privileged Cases"
 objExcel.cells(1, 6).Font.Bold = TRUE
 
-'If the appointments_per_time_slot variable isn't declared, it defaults to 1
-IF appointments_per_time_slot = "" THEN appointments_per_time_slot = 1
-IF alt_appointments_per_time_slot = "" THEN alt_appointments_per_time_slot = 1
+'creating month plus 1 and plus 2
+cm_plus_1 = dateadd("M", 1, date)
+cm_plus_2 = dateadd("M", 2, date)
 
-'Checking for MAXIS
-CALL check_for_MAXIS(false)
-
+CALL check_for_MAXIS(false)		'Checking for active MAXIS session
 'We need to get back to SELF and manually update the footer month
 back_to_SELF
 current_month = DatePart("M", date)
@@ -147,8 +138,6 @@ EMWriteScreen revs_month, 20, 55
 EMWriteScreen revs_year, 20, 58
 transmit
 
-'autofilling the users worker number into the dialog
-worker_number = worker_number_editbox
 'Checking to see if the worker running the script is the the worker selected, if not it will enter the selected worker's number
 EMReadScreen current_worker, 7, 21, 6
 IF UCASE(current_worker) <> UCASE(worker_number) THEN
