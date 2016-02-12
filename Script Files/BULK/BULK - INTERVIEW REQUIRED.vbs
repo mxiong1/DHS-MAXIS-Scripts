@@ -56,7 +56,7 @@ DIM appointment_required_dialog, REPT_panel, MAXIS_footer_month, MAXIS_footer_ye
 
 'DIALOG'----------------------------------------------------------------------------------------------------
 BeginDialog appointment_required_dialog, 0, 0, 256, 80, "Appointment required dialog"
-  DropListBox 70, 10, 60, 15, "REPT/ACTV"+chr(9)+"REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
+  DropListBox 70, 10, 60, 15, "REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
   EditBox 210, 10, 20, 15, MAXIS_footer_month
   EditBox 230, 10, 20, 15, MAXIS_footer_year
   EditBox 70, 30, 180, 15, worker_number
@@ -95,7 +95,6 @@ last_day_of_recert = dateadd("D", -1, last_day_of_recert)
 'Grabbing the worker's X number.
 CALL find_variable("User: ", worker_number, 7)
 
-
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
 objExcel.Visible = True
@@ -107,8 +106,14 @@ objExcel.cells(1, 1).Value = "CASE NUMBER"
 objExcel.Cells(1, 1).Font.Bold = TRUE
 objExcel.Cells(1, 2).Value = "Interview Date & Time"
 objExcel.cells(1, 2).Font.Bold = TRUE
-objExcel.cells(1, 5).Value = "Privileged Cases"
+objExcel.Cells(1, 3).Value = "Phone Number 1"
+objExcel.cells(1, 3).Font.Bold = TRUE
+objExcel.Cells(1, 4).Value = "Phone Number 2"
+objExcel.cells(1, 4).Font.Bold = TRUE
+objExcel.Cells(1, 5).Value = "Phone Number 3"
 objExcel.cells(1, 5).Font.Bold = TRUE
+objExcel.cells(1, 6).Value = "Privileged Cases"
+objExcel.cells(1, 6).Font.Bold = TRUE
 
 'If the appointments_per_time_slot variable isn't declared, it defaults to 1
 IF appointments_per_time_slot = "" THEN appointments_per_time_slot = 1
@@ -124,9 +129,8 @@ IF len(current_month) = 1 THEN current_month = "0" & current_month
 current_year = DatePart("YYYY", date)
 current_year = right(current_year, 2)
 
-'Determining the month that the script will access REPT/REVS. It's CM+2 for most, but CM+1 in developer mode
+'Determining the month that the script will access REPT/REVS.
 revs_month = DateAdd("M", 2, date)
-IF developer_mode = True THEN revs_month = DateAdd("M", -1, revs_month)
 revs_year = DatePart("YYYY", revs_month)
 revs_year = right(revs_year, 2)
 revs_month = DatePart("M", revs_month)
@@ -143,9 +147,8 @@ EMWriteScreen revs_month, 20, 55
 EMWriteScreen revs_year, 20, 58
 transmit
 
-'<<<<<<<<<<<<TEMP
+'autofilling the users worker number into the dialog
 worker_number = worker_number_editbox
-
 'Checking to see if the worker running the script is the the worker selected, if not it will enter the selected worker's number
 EMReadScreen current_worker, 7, 21, 6
 IF UCASE(current_worker) <> UCASE(worker_number) THEN
@@ -155,6 +158,7 @@ END IF
 
 'Grabbing case numbers from REVS for requested worker
 Excel_row = 2	'Declaring variable prior to do...loops
+
 DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 	MAXIS_row = 7	'Setting or resetting this to look at the top of the list
 	DO		'All of this loops until MAXIS_row = 19
@@ -247,26 +251,32 @@ DO 'Loops until there are no more cases in the Excel list
 				excel_row = excel_row - 1
 			END If
 		END IF
+		Call navigate_to_MAXIS_screen("STAT", "ADDR")
+		EMReadScreen phone_number_one, 16, 17, 43
+		phone_number_one = objExcel.cells(excel_row, 3).Value
+		EMReadScreen phone_number_two, 16, 18, 43
+		phone_number_two = objExcel.cells(excel_row, 4).Value
+		EMReadScreen phone_number_three, 16, 19, 43
+		phone_number_three = objExcel.cells(excel_row, 5).Value
 	END IF
 	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter	
 	excel_row = excel_row + 1
 LOOP UNTIL objExcel.Cells(excel_row, 1).Value = ""	'looping until the list of cases to check for recert is complete
 
-NEXT
-
 'Formatting the columns to autofit after they are all finished being created.
-objExcel.Columns(1).autofit()
-objExcel.Columns(2).autofit()
-objExcel.Columns(3).autofit()
-objExcel.Columns(4).autofit()
+FOR i = 1 to 6		'formatting the cells'
+ 	objExcel.Cells(1, i).Font.Bold = True		'bold font'
+ 	objExcel.Columns(i).AutoFit()						'sizing the colums'
+ NEXT
 
 'Creating the list of privileged cases and adding to the spreadsheet
 prived_case_array = split(priv_case_list, "|")
 excel_row = 2
 
 FOR EACH case_number in prived_case_array
-	objExcel.cells(excel_row, 5).value = case_number
+	objExcel.cells(excel_row, 6).value = case_number
 	excel_row = excel_row + 1
 NEXT
 
+msgbox STATS_counter
 script_end_procedure("Success! The Excel file now has all of the cases that require interviews for renewals.  Please manually review the list of privileged cases.")
