@@ -1,4 +1,3 @@
-'OPTION EXPLICIT
 'STATS GATHERING----------------------------------------------------------------------------------------------------
 name_of_script = "BULK - INTERVIEW REQUIRED.vbs"
 start_time = timer
@@ -50,43 +49,87 @@ STATS_counter = 1			     'sets the stats counter at one
 STATS_manualtime = 39			 'manual run time in seconds	
 STATS_denomination = "C"		 'C is for each case	
 'END OF stats block==============================================================================================	
-	
-'Declaring variables
-DIM appointment_required_dialog, REPT_panel, MAXIS_footer_month, MAXIS_footer_year, ButtonPressed
 
-'DIALOG'----------------------------------------------------------------------------------------------------
-BeginDialog appointment_required_dialog, 0, 0, 256, 80, "Appointment required dialog"
+BeginDialog appointment_required_dialog, 0, 0, 286, 80, "Appointment required dialog"
   DropListBox 70, 10, 60, 15, "REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
-  EditBox 70, 30, 180, 15, worker_number_editbox
+  DropListBox 185, 10, 90, 15, "Select one..."+chr(9)+"Current month"+chr(9)+"Current month plus one"+chr(9)+"Current month plus two", footer_selection
+  EditBox 70, 30, 205, 15, worker_number_editbox
   ButtonGroup ButtonPressed
-    OkButton 145, 50, 50, 15
-    CancelButton 200, 50, 50, 15
-  Text 5, 15, 55, 10, "Create list from:"
-  Text 150, 15, 45, 10, "Time period:"
+    OkButton 170, 50, 50, 15
+    CancelButton 225, 50, 50, 15
   Text 5, 35, 60, 10, "Worker number(s):"
-  Text 5, 50, 130, 25, "Enter 7 digits of each, (ex: x######). If entering multiple workers, separate each with a comma."
-  DropListBox 200, 10, 50, 15, "Select one..."+chr(9)+"Current month"+chr(9)+"Current month plus one"+chr(9)+"Current month plus two", footer_selection
+  Text 5, 15, 55, 10, "Create list from:"
+  Text 5, 50, 160, 25, "Enter 7 digits of each, (ex: x######). If entering multiple workers, separate each with a comma."
+  Text 135, 15, 45, 10, "Time period:"
 EndDialog
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
-'Connects to BlueZone & grabs current footer month/year
-EMConnect ""
-Call MAXIS_footer_finder(MAXIS_footer_month, MAXIS_footer_year)
-
+EMConnect ""		'Connects to BlueZone
 'Grabbing the worker's X number to autofill into the dialog 
-CALL find_variable("User: ", worker_number, 7) 
-worker_number = worker_number_editbox	
+'CALL find_variable("User: ", worker_number, 7) 
+'worker_number_editbox = worker_number
+worker_number_editbox = "x127EJ6"
 
 'DISPLAYS DIALOG
 DO                              
 	err_msg = ""	
 	Dialog appointment_required_dialog	
 	If ButtonPressed = 0 then StopScript	
-	If worker_number = "" or len(worker_number) <> then err_msg = err_msg & vbNewLine & "* Enter a valid case number."	
-    If IsNumeric(MAXIS_footer_month) = False or len(MAXIS_footer_month) > 2 or len(MAXIS_footer_month) < 2 then err_msg = err_msg & vbNewLine & "* Enter a valid footer month."	
-    If IsNumeric(MAXIS_footer_year) = False or len(MAXIS_footer_year) > 2 or len(MAXIS_footer_year) < 2 then err_msg = err_msg & vbNewLine & "* Enter a valid footer year."	
+	If worker_number_editbox = "" or len(worker_number_editbox) <> 7 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."	
+	If footer_selection = "Select one..." then err_msg = err_msg & vbNewLine & "* Select the time period for your list."
+	If REPT_panel = "REPT/REVW" and footer_selection = "Current month plus two" then err_msg = err_msg & VbNewLine & "* This is time period is not an option REPT/REVW. Please select a new time period."
+	If (REPT_panel = "REPT/REVS" and footer_selection = "Current month plus two" and datePart("d", date) < 16) then err_msg = err_msg & VbNewLine & "* This is not a valid time period for REPT/REVS until the 16th of the month. Please select a new time period."
 	IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine	
 LOOP until err_msg = ""	
+
+'creating dates for the footer_selection variable
+If footer_selection = "Current month" then 
+	footer_month = DatePart("M", date)
+	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
+	footer_year = DatePart("YYYY", date)
+	footer_year = right(footer_year, 2)
+ELSEif footer_selection = "Current month plus one" then
+ 	footer_month = dateadd("M", 1, date)
+	footer_month = datePart("M", date)
+	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
+	footer_year = DatePart("YYYY", date)
+	footer_year = right(footer_year, 2)
+ELSEIF footer_selection = "Current month plus two" then 
+	footer_month = dateadd("M", 2, date)
+	footer_month = datePart("M", date)
+	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
+	footer_year = DatePart("YYYY", date)
+	footer_year = right(footer_year, 2)
+END IF 
+
+MsgBox footer_month & " " & footer_year
+stopscript
+
+'creating current month date for 
+current_month = DatePart("M", date)
+IF len(current_month) = 1 THEN current_month = "0" & current_month
+current_year = DatePart("YYYY", date)
+current_year = right(current_year, 2)
+		
+CALL check_for_MAXIS(false)		'Checking for active MAXIS session
+'We need to get back to SELF and manually update the footer month
+back_to_self
+REPT_panel = right(REPT_panel, 4)	're-establishing variable to exclude all but the last 4 characters to the right
+EMWriteScreen "________", 18, 43
+	'writing in 
+If footer_selection = "Current month plus two" then 
+	EMWriteScreen current_month, 20, 43
+	EMWriteScreen current_year, 20, 46
+	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
+	EMWriteScreen footer_month, 20, 55
+	EMWriteScreen footer_year, 20, 58
+	transmit
+ELSE 	
+	EMWriteScreen footer_month, 20, 43
+	EMWriteScreen footer_year, 20, 46
+	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
+END IF 
+MsgBox "nav test"
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -108,36 +151,6 @@ objExcel.cells(1, 5).Font.Bold = TRUE
 objExcel.cells(1, 6).Value = "Privileged Cases"
 objExcel.cells(1, 6).Font.Bold = TRUE
 
-'creating month plus 1 and plus 2
-cm_plus_1 = dateadd("M", 1, date)
-cm_plus_2 = dateadd("M", 2, date)
-
-CALL check_for_MAXIS(false)		'Checking for active MAXIS session
-'We need to get back to SELF and manually update the footer month
-back_to_SELF
-current_month = DatePart("M", date)
-IF len(current_month) = 1 THEN current_month = "0" & current_month
-current_year = DatePart("YYYY", date)
-current_year = right(current_year, 2)
-
-'Determining the month that the script will access REPT/REVS.
-revs_month = DateAdd("M", 2, date)
-revs_year = DatePart("YYYY", revs_month)
-revs_year = right(revs_year, 2)
-revs_month = DatePart("M", revs_month)
-IF len(revs_month) = 1 THEN revs_month = "0" & revs_month
-
-'writing current month and transmitting
-EMWriteScreen current_month, 20, 43
-EMWriteScreen current_year, 20, 46
-transmit
-
-'navigating to REVS and entering REVS Month and year as determined above
-CALL navigate_to_MAXIS_screen("REPT", "REVS")
-EMWriteScreen revs_month, 20, 55
-EMWriteScreen revs_year, 20, 58
-transmit
-
 'Checking to see if the worker running the script is the the worker selected, if not it will enter the selected worker's number
 EMReadScreen current_worker, 7, 21, 6
 IF UCASE(current_worker) <> UCASE(worker_number) THEN
@@ -155,7 +168,6 @@ DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 		EMReadScreen case_number, 8, MAXIS_row, 6
 		EMReadScreen SNAP_status, 1, MAXIS_row, 45
 		EMReadScreen cash_status, 1, MAXIS_row, 34
-
 		'Navigates though until it runs out of case numbers to read
 		IF case_number = "        " then exit do
 
@@ -163,7 +175,6 @@ DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 		If cash_status = "-" 	then cash_status = ""
 		If SNAP_status = "-" 	then SNAP_status = ""
 		If HC_status = "-" 		then HC_status = ""
-
 		'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
 		If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
 		If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
@@ -176,12 +187,10 @@ DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 
 		'On the next loop it must look to the next row
 		MAXIS_row = MAXIS_row + 1
-
 		'Clearing variables before next loop
 		add_case_info_to_Excel = ""
 		case_number = ""
 	Loop until MAXIS_row = 19		'Last row in REPT/REVS
-
 	'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
 	PF8
 	EMReadScreen last_page_check, 21, 24, 2	'checking to see if we're at the end
