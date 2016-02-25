@@ -53,7 +53,7 @@ STATS_denomination = "C"		 'C is for each case
 BeginDialog appointment_required_dialog, 0, 0, 286, 80, "Appointment required dialog"
   DropListBox 70, 10, 60, 15, "REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
   DropListBox 185, 10, 90, 15, "Select one..."+chr(9)+"Current month"+chr(9)+"Current month plus one"+chr(9)+"Current month plus two", footer_selection
-  EditBox 70, 30, 205, 15, worker_number_editbox
+  EditBox 70, 30, 205, 15, worker_number
   ButtonGroup ButtonPressed
     OkButton 170, 50, 50, 15
     CancelButton 225, 50, 50, 15
@@ -67,14 +67,14 @@ EndDialog
 EMConnect ""		'Connects to BlueZone
 'Grabbing the worker's X number to autofill into the dialog 
 CALL find_variable("User: ", worker_number, 7) 
-worker_number_editbox = worker_number
+worker_number = worker_number
 
 'DISPLAYS DIALOG
 DO                              
 	err_msg = ""	
 	Dialog appointment_required_dialog	
 	If ButtonPressed = 0 then StopScript	
-	If worker_number_editbox = "" or len(worker_number_editbox) <> 7 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."	
+	If worker_number = "" or len(worker_number) <> 7 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."	
 	If footer_selection = "Select one..." then err_msg = err_msg & vbNewLine & "* Select the time period for your list."
 	If REPT_panel = "REPT/REVW" and footer_selection = "Current month plus two" then err_msg = err_msg & VbNewLine & "* This is time period is not an option REPT/REVW. Please select a new time period."
 	If (REPT_panel = "REPT/REVS" and footer_selection = "Current month plus two" and datePart("d", date) < 16) then err_msg = err_msg & VbNewLine & "* This is not a valid time period for REPT/REVS until the 16th of the month. Please select a new time period."
@@ -139,14 +139,12 @@ objExcel.DisplayAlerts = True
 'formatting excel file with columns for case number and interview date/time
 objExcel.cells(1, 1).Value = "CASE NUMBER"
 objExcel.Cells(1, 1).Font.Bold = TRUE
-objExcel.Cells(1, 2).Value = "Interview Date & Time"
+objExcel.Cells(1, 2).Value = "Phone Number 1"
 objExcel.cells(1, 2).Font.Bold = TRUE
-objExcel.Cells(1, 3).Value = "Phone Number 1"
+objExcel.Cells(1, 3).Value = "Phone Number 2"
 objExcel.cells(1, 3).Font.Bold = TRUE
-objExcel.Cells(1, 4).Value = "Phone Number 2"
+objExcel.Cells(1, 4).Value = "Phone Number 3"
 objExcel.cells(1, 4).Font.Bold = TRUE
-objExcel.Cells(1, 5).Value = "Phone Number 3"
-objExcel.cells(1, 5).Font.Bold = TRUE
 objExcel.cells(1, 6).Value = "Privileged Cases"
 objExcel.cells(1, 6).Font.Bold = TRUE
 
@@ -212,7 +210,7 @@ DO 'Loops until there are no more cases in the Excel list
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
 
 		priv_case_list = priv_case_list & "|" & case_number
-		SET objRange = objExcel.Cells(excel_row, 1).EntireRow
+		SET objRange = objExcel.Cells(excel_row, 6).EntireRow
 		objRange.Delete
 		excel_row = excel_row - 1
 		msgbox priv_case_list
@@ -250,11 +248,11 @@ DO 'Loops until there are no more cases in the Excel list
 		END IF
 		Call navigate_to_MAXIS_screen("STAT", "ADDR")
 		EMReadScreen phone_number_one, 16, 17, 43
-		phone_number_one = objExcel.cells(excel_row, 3).Value
+		phone_number_one = objExcel.cells(excel_row, 2).Value
 		EMReadScreen phone_number_two, 16, 18, 43
-		phone_number_two = objExcel.cells(excel_row, 4).Value
+		phone_number_two = objExcel.cells(excel_row, 3).Value
 		EMReadScreen phone_number_three, 16, 19, 43
-		phone_number_three = objExcel.cells(excel_row, 5).Value
+		phone_number_three = objExcel.cells(excel_row, 4).Value
 	END IF
 	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter	
 	excel_row = excel_row + 1
@@ -275,5 +273,6 @@ FOR EACH case_number in prived_case_array
 	excel_row = excel_row + 1
 NEXT
 
-msgbox STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
+STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
+msgbox STATS_counter
 script_end_procedure("Success! The Excel file now has all of the cases that require interviews for renewals.  Please manually review the list of privileged cases.")
