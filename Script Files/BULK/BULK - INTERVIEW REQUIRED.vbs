@@ -1,5 +1,5 @@
 'STATS GATHERING----------------------------------------------------------------------------------------------------
-name_of_script = "BULK - INTERVIEW REQUIRED.vbs"
+name_of_script = "BULK - INTERVIEW REQUIRED.vbs" 'BULK script that creates a list of cases that require an interview, and the contact phone numbers'
 start_time = timer
 
 'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
@@ -107,8 +107,6 @@ IF len(current_month) = 1 THEN current_month = "0" & current_month
 current_year = DatePart("YYYY", date)
 current_year = right(current_year, 2)
 
-msgbox "Current month/year: " & current_month & " " & current_year
-		
 CALL check_for_MAXIS(false)		'Checking for active MAXIS session
 'We need to get back to SELF and manually update the footer month
 back_to_self
@@ -127,8 +125,6 @@ ELSE
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
 END IF 
 transmit
-
-MsgBox "nav test for panel: " & REPT_panel & vbnewLIne & "footer month selected: " & footer_month & "/" & footer_year
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -176,7 +172,6 @@ Do
 		ELSE 
 			EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
 		END IF
-		msgbox case_number
 		'Navigates though until it runs out of case numbers to read
 		IF case_number = "        " then exit do
 
@@ -186,7 +181,6 @@ Do
 		'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
 		If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
 		If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
-		msgbox add_case_info_to_Excel
 		
 		'Adding the case to Excel
 		If add_case_info_to_Excel = True then
@@ -195,7 +189,6 @@ Do
 		End if
 		'On the next loop it must look to the next row
 		MAXIS_row = MAXIS_row + 1
-		msgbox "MAXIS row = " & MAXIS_row
 		'Clearing variables before next loop
 		add_case_info_to_Excel = ""
 		case_number = ""
@@ -204,8 +197,6 @@ Do
 	PF8
 	EMReadScreen last_page_check, 21, 24, 02
 Loop until last_page_check = "THIS IS THE LAST PAGE"
-msgbox "stopscript"
-stopscript
 
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
 excel_row = 2		'Resets the variable to 2, as it needs to look through all of the cases on the Excel sheet!
@@ -219,12 +210,10 @@ DO 'Loops until there are no more cases in the Excel list
 	'Checking for PRIV cases.
 	EMReadScreen priv_check, 6, 24, 14 'If it can't get into the case needs to skip
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
-
 		priv_case_list = priv_case_list & "|" & case_number
 		SET objRange = objExcel.Cells(excel_row, 6).EntireRow
 		objRange.Delete
 		excel_row = excel_row - 1
-		msgbox priv_case_list
 	ELSE		'For all of the cases that aren't privileged...
 		'Looks at review details
 		EMwritescreen "x", 5, 58
@@ -239,8 +228,11 @@ DO 'Loops until there are no more cases in the Excel list
 		EMReadScreen recert_mo, 2, 9, 64
 		EMReadScreen recert_yr, 2, 9, 70
 		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
-		IF CSR_mo = left(cm_plus_2, 2) and CSR_yr = right(cm_plus_2, 2) THEN recert_status = "NO"
-		IF recert_mo = left(cm_plus_2, 2) and recert_yr = right(cm_plus_2, 2) THEN recert_status = "YES"
+		IF CSR_mo = left(footer_month, 2) and CSR_yr = right(footer_year, 2) THEN recert_status = "NO"
+		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN recert_status = "YES"
+		If recert_mo = "__" and recert_yr = "__" then recert_status = "NO" 	'in case there is no SNAP, will check for MFIP being active, if not active, then will remove from list in next IF...THEN statement.
+		
+		Msgbox recert_status
 
 		'If it's not a recert, delete it from the excel list and move on with our lives
 		IF recert_status = "NO" THEN
@@ -254,6 +246,7 @@ DO 'Loops until there are no more cases in the Excel list
 			ELSE 
 				recert_status = "YES"
 			END If
+			Msgbox recert_status
 		END IF
 		
 		IF recert_status = "YES" then 
@@ -265,6 +258,7 @@ DO 'Loops until there are no more cases in the Excel list
 			EMReadScreen phone_number_three, 16, 19, 43
 			phone_number_three = objExcel.cells(excel_row, 4).Value
 		END IF
+		Msgbox "are you on addr panel?"
 	END IF
 	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter	
 	excel_row = excel_row + 1
