@@ -69,6 +69,11 @@ EMConnect ""		'Connects to BlueZone
 CALL find_variable("User: ", worker_number, 7) 
 worker_number = worker_number
 
+''///////////////remove after testing
+REPT_panel = "REPT/REVW"
+footer_selection = "Current month plus one"
+worker_number = "x127EJ6"
+
 'DISPLAYS DIALOG
 DO                              
 	err_msg = ""	
@@ -137,6 +142,7 @@ objExcel.cells(1, 1).Value = "CASE NUMBER"
 objExcel.Cells(1, 2).Value = "Phone Number 1"
 objExcel.Cells(1, 3).Value = "Phone Number 2"
 objExcel.Cells(1, 4).Value = "Phone Number 3"
+objExcel.cells(1, 5).Value = "Worker Number"
 objExcel.cells(1, 6).Value = "Privileged Cases"
 
 FOR i = 1 to 6		'formatting the cells'
@@ -144,12 +150,22 @@ FOR i = 1 to 6		'formatting the cells'
 	objExcel.Columns(i).AutoFit()				'sizing the colums'
 NEXT
 
-'Checking to see if the worker running the script is the the worker selected, if not it will enter the selected worker's number
-EMReadScreen current_worker, 7, 21, 6
-IF UCASE(current_worker) <> UCASE(worker_number) THEN
-	EMWriteScreen UCASE(worker_number), 21, 6
-	transmit
-END IF
+'Splitting array for use by the for...next statement
+worker_number_array = split(worker_number, ",")
+For each worker in worker_number_array
+	If trim(worker) = "" then exit for
+	worker_ID = trim(worker)
+
+	If REPT_panel = "REPT/ACTV" then 'THE REPT PANEL HAS THE worker NUMBER IN DIFFERENT COLUMNS. THIS WILL DETERMINE THE CORRECT COLUMN FOR THE worker NUMBER TO GO
+		worker_ID_col = 13
+	Else
+		worker_ID_col = 6
+	End if
+	EMReadScreen default_worker_number, 7, 21, worker_ID_col 'CHECKING THE CURRENT worker NUMBER. IF IT DOESN'T NEED TO CHANGE IT WON'T. OTHERWISE, THE SCRIPT WILL INPUT THE CORRECT NUMBER.
+	If ucase(worker_ID) <> ucase(default_worker_number) then
+		EMWriteScreen worker_ID, 21, worker_ID_col
+		transmit
+	End if
 
 'Grabbing case numbers from REVS for requested worker
 Excel_row = 2	'Declaring variable prior to do...loops
@@ -244,7 +260,7 @@ DO 'Loops until there are no more cases in the Excel list
 				objRange.Delete				'all other cases that are not due for a recert will be deleted
 				excel_row = excel_row - 1
 			ELSE 
-				recert_status = "YES"
+					recert_status = "YES"
 			END If
 			Msgbox recert_status
 		END IF
@@ -252,11 +268,11 @@ DO 'Loops until there are no more cases in the Excel list
 		IF recert_status = "YES" then 
 			Call navigate_to_MAXIS_screen("STAT", "ADDR")
 			EMReadScreen phone_number_one, 16, 17, 43
-			phone_number_one = objExcel.cells(excel_row, 2).Value
+			phone_number_one = objExcel.cells(excel_row, 2).Value = phone_number_one
 			EMReadScreen phone_number_two, 16, 18, 43
-			phone_number_two = objExcel.cells(excel_row, 3).Value
+			phone_number_two = objExcel.cells(excel_row, 3).Value = phone_number_two
 			EMReadScreen phone_number_three, 16, 19, 43
-			phone_number_three = objExcel.cells(excel_row, 4).Value
+			phone_number_three = objExcel.cells(excel_row, 4).Value = phone_number_three
 		END IF
 		Msgbox "are you on addr panel?"
 	END IF
