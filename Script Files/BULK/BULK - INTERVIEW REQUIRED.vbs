@@ -107,7 +107,7 @@ IF len(current_month) = 1 THEN current_month = "0" & current_month
 current_year = DatePart("YYYY", date)
 current_year = right(current_year, 2)
 
-msgbox "Current date: " & current_month & " " & current_year
+msgbox "Current month/year: " & current_month & " " & current_year
 		
 CALL check_for_MAXIS(false)		'Checking for active MAXIS session
 'We need to get back to SELF and manually update the footer month
@@ -128,7 +128,7 @@ ELSE
 END IF 
 transmit
 
-MsgBox "nav test for panel: " & REPT_panel & vbnewLIne & "footer month: " & footer_month & "/" & footer_year
+MsgBox "nav test for panel: " & REPT_panel & vbnewLIne & "footer month selected: " & footer_month & "/" & footer_year
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -136,17 +136,17 @@ objExcel.Visible = True
 Set objWorkbook = objExcel.Workbooks.Add()
 objExcel.DisplayAlerts = True
 
-'formatting excel file with columns for case number and interview date/time
+'formatting excel file with columns for case number and phone numbers
 objExcel.cells(1, 1).Value = "CASE NUMBER"
-objExcel.Cells(1, 1).Font.Bold = TRUE
 objExcel.Cells(1, 2).Value = "Phone Number 1"
-objExcel.cells(1, 2).Font.Bold = TRUE
 objExcel.Cells(1, 3).Value = "Phone Number 2"
-objExcel.cells(1, 3).Font.Bold = TRUE
 objExcel.Cells(1, 4).Value = "Phone Number 3"
-objExcel.cells(1, 4).Font.Bold = TRUE
 objExcel.cells(1, 6).Value = "Privileged Cases"
-objExcel.cells(1, 6).Font.Bold = TRUE
+
+FOR i = 1 to 6		'formatting the cells'
+	objExcel.Cells(1, i).Font.Bold = True		'bold font'
+	objExcel.Columns(i).AutoFit()				'sizing the colums'
+NEXT
 
 'Checking to see if the worker running the script is the the worker selected, if not it will enter the selected worker's number
 EMReadScreen current_worker, 7, 21, 6
@@ -165,6 +165,7 @@ DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 		EMReadScreen case_number, 8, MAXIS_row, 6
 		EMReadScreen SNAP_status, 1, MAXIS_row, 45
 		EMReadScreen cash_status, 1, MAXIS_row, 34
+		msgbox case_number
 		'Navigates though until it runs out of case numbers to read
 		IF case_number = "        " then exit do
 
@@ -195,13 +196,10 @@ Loop until last_page_check = "THIS IS THE LAST PAGE"
 
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
 excel_row = 2		'Resets the variable to 2, as it needs to look through all of the cases on the Excel sheet!
-reviews_total = 0	'Sets this to 0 for the following do...loop. It'll exit once it's hit the reviews cap
 
 DO 'Loops until there are no more cases in the Excel list
-
 	'Grabs the case number
 	case_number = objExcel.cells(excel_row, 1).Value
-
 	'Goes to STAT/REVW
 	CALL navigate_to_MAXIS_screen("STAT", "REVW")
 
@@ -214,13 +212,10 @@ DO 'Loops until there are no more cases in the Excel list
 		objRange.Delete
 		excel_row = excel_row - 1
 		msgbox priv_case_list
-
 	ELSE		'For all of the cases that aren't privileged...
-
 		'Looks at review details
 		EMwritescreen "x", 5, 58
 		Transmit
-
 		DO
 			EMReadScreen SNAP_popup_check, 7, 5, 43
 		LOOP until SNAP_popup_check = "Reports"
@@ -230,7 +225,6 @@ DO 'Loops until there are no more cases in the Excel list
 		EMReadScreen CSR_yr, 2, 9, 32
 		EMReadScreen recert_mo, 2, 9, 64
 		EMReadScreen recert_yr, 2, 9, 70
-
 		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
 		IF CSR_mo = left(cm_plus_2, 2) and CSR_yr = right(cm_plus_2, 2) THEN recert_status = "NO"
 		IF recert_mo = left(cm_plus_2, 2) and recert_yr = right(cm_plus_2, 2) THEN recert_status = "YES"
@@ -240,19 +234,24 @@ DO 'Loops until there are no more cases in the Excel list
 			Call navigate_to_MAXIS_screen("STAT", "PROG")
 			EMReadScreen MFIP_prog_check, 2, 6, 67		'checking for an active MFIP case
 			EMReadScreen MFIP_status_check, 4, 6, 74
-			If MFIP_prog_check <> "MF" AND MFIP_status_check <> "ACTV" THEN 	'if MFIP is active, then case will not be deleted.
+			If MFIP_prog_check <> "MF" AND MFIP_status_check <> "ACTV" THEN 'if MFIP is active, then case will not be deleted.
 				SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 				objRange.Delete				'all other cases that are not due for a recert will be deleted
 				excel_row = excel_row - 1
+			ELSE 
+				recert_status = "YES"
 			END If
 		END IF
-		Call navigate_to_MAXIS_screen("STAT", "ADDR")
-		EMReadScreen phone_number_one, 16, 17, 43
-		phone_number_one = objExcel.cells(excel_row, 2).Value
-		EMReadScreen phone_number_two, 16, 18, 43
-		phone_number_two = objExcel.cells(excel_row, 3).Value
-		EMReadScreen phone_number_three, 16, 19, 43
-		phone_number_three = objExcel.cells(excel_row, 4).Value
+		
+		IF recert_status = "YES" then 
+			Call navigate_to_MAXIS_screen("STAT", "ADDR")
+			EMReadScreen phone_number_one, 16, 17, 43
+			phone_number_one = objExcel.cells(excel_row, 2).Value
+			EMReadScreen phone_number_two, 16, 18, 43
+			phone_number_two = objExcel.cells(excel_row, 3).Value
+			EMReadScreen phone_number_three, 16, 19, 43
+			phone_number_three = objExcel.cells(excel_row, 4).Value
+		END IF
 	END IF
 	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter	
 	excel_row = excel_row + 1
