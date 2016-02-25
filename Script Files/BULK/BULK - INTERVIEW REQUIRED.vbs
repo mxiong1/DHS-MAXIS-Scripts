@@ -160,9 +160,8 @@ Excel_row = 2	'Declaring variable prior to do...loops
 
 'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
 Do
-	EMReadScreen last_page_check, 21, 24, 02
-	'This Do...loop checks for the password prompt.
 	Do
+		'This Do...loop checks for the password prompt.
 		EMReadScreen password_prompt, 38, 2, 23
 		IF password_prompt = "ACF2/CICS PASSWORD VERIFICATION PROMPT" then MsgBox "You are locked out of your case. Type your password then try again."
 	Loop until password_prompt <> "ACF2/CICS PASSWORD VERIFICATION PROMPT"
@@ -172,7 +171,11 @@ Do
 		'Reading case information (case number, SNAP status, and cash status)
 		EMReadScreen case_number, 8, MAXIS_row, 6
 		EMReadScreen SNAP_status, 1, MAXIS_row, 45
-		EMReadScreen cash_status, 1, MAXIS_row, 34
+		If REPT_panel = "REVS" then 
+			EMReadScreen cash_status, 1, MAXIS_row, 34
+		ELSE 
+			EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
+		END IF
 		msgbox case_number
 		'Navigates though until it runs out of case numbers to read
 		IF case_number = "        " then exit do
@@ -180,11 +183,11 @@ Do
 		'For some goofy reason the dash key shows up instead of the space key. No clue why. This will turn them into null variables.
 		If cash_status = "-" 	then cash_status = ""
 		If SNAP_status = "-" 	then SNAP_status = ""
-		If HC_status = "-" 		then HC_status = ""
 		'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
 		If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
 		If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
-
+		msgbox add_case_info_to_Excel
+		
 		'Adding the case to Excel
 		If add_case_info_to_Excel = True then
 			ObjExcel.Cells(excel_row, 1).Value = case_number
@@ -192,14 +195,17 @@ Do
 		End if
 		'On the next loop it must look to the next row
 		MAXIS_row = MAXIS_row + 1
-		
+		msgbox "MAXIS row = " & MAXIS_row
 		'Clearing variables before next loop
 		add_case_info_to_Excel = ""
 		case_number = ""
 	Loop until MAXIS_row = 19		'Last row in REPT/REVS
 	'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
 	PF8
+	EMReadScreen last_page_check, 21, 24, 02
 Loop until last_page_check = "THIS IS THE LAST PAGE"
+msgbox "stopscript"
+stopscript
 
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
 excel_row = 2		'Resets the variable to 2, as it needs to look through all of the cases on the Excel sheet!
