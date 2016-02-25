@@ -158,7 +158,15 @@ END IF
 'Grabbing case numbers from REVS for requested worker
 Excel_row = 2	'Declaring variable prior to do...loops
 
-DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
+'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
+Do
+	EMReadScreen last_page_check, 21, 24, 02
+	'This Do...loop checks for the password prompt.
+	Do
+		EMReadScreen password_prompt, 38, 2, 23
+		IF password_prompt = "ACF2/CICS PASSWORD VERIFICATION PROMPT" then MsgBox "You are locked out of your case. Type your password then try again."
+	Loop until password_prompt <> "ACF2/CICS PASSWORD VERIFICATION PROMPT"
+	
 	MAXIS_row = 7	'Setting or resetting this to look at the top of the list
 	DO		'All of this loops until MAXIS_row = 19
 		'Reading case information (case number, SNAP status, and cash status)
@@ -182,16 +190,15 @@ DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 			ObjExcel.Cells(excel_row, 1).Value = case_number
 			excel_row = excel_row + 1
 		End if
-
 		'On the next loop it must look to the next row
 		MAXIS_row = MAXIS_row + 1
+		
 		'Clearing variables before next loop
 		add_case_info_to_Excel = ""
 		case_number = ""
 	Loop until MAXIS_row = 19		'Last row in REPT/REVS
 	'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
 	PF8
-	EMReadScreen last_page_check, 21, 24, 2	'checking to see if we're at the end
 Loop until last_page_check = "THIS IS THE LAST PAGE"
 
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
