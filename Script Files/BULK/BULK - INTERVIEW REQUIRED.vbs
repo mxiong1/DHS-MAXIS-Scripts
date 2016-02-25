@@ -72,7 +72,7 @@ worker_number = worker_number
 ''///////////////remove after testing
 REPT_panel = "REPT/REVW"
 footer_selection = "Current month plus one"
-worker_number = "x127EJ6"
+worker_number = "x127FD5"
 
 'DISPLAYS DIALOG
 DO                              
@@ -247,29 +247,34 @@ DO 'Loops until there are no more cases in the Excel list
 		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
 		If recert_mo = "__" and recert_yr = "__" then recert_status = "NO" 	'in case there is no SNAP, will check for MFIP being active, if not active, then will remove from list in next IF...THEN statement.
 		IF CSR_mo = left(footer_month, 2) and CSR_yr = right(footer_year, 2) THEN recert_status = "NO"
-		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN recert_status = "YES"
+		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN 
+			recert_status = "YES"
+		ELSE 
+			recert_status = "NO"
+		END IF
 
-		MSgbox "recert month is " & recert_mo & "/" & recert_yr & vbNewline & "footer month is " & footer_month & "/" & footer_year 
-		Msgbox recert_status
+		MSgbox "recert month is " & recert_mo & "/" & recert_yr & vbNewline & "footer month is " & footer_month & "/" & footer_year & vbnewLine & recert_status
 
-		'If it's not a recert, delete it from the excel list and move on with our lives
+		'checking for ACTV MFIP'
 		IF recert_status = "NO" THEN
 			Call navigate_to_MAXIS_screen("STAT", "PROG")
 			EMReadScreen MFIP_prog_check, 2, 6, 67		'checking for an active MFIP case
 			EMReadScreen MFIP_status_check, 4, 6, 74
-			If MFIP_prog_check <> "MF" AND MFIP_status_check <> "ACTV" THEN 'if MFIP is active, then case will not be deleted.
-				SET objRange = objExcel.Cells(excel_row, 1).EntireRow
-				objRange.Delete				'all other cases that are not due for a recert will be deleted
-				excel_row = excel_row - 1
+			If MFIP_prog_check = "MF" AND MFIP_status_check = "ACTV" THEN 'if MFIP is active, then case will not be deleted.
+				recert_status = "YES"
 			ELSE 
-					recert_status = "YES"
+				recert_status = "NO"
 			END If
-			Msgbox recert_status
 		END IF
 		
-		IF recert_status = "YES" then 
+		'If it's not a recert, delete it from the excel list and move on with our lives
+		If recert_status = "NO" then
+			SET objRange = objExcel.Cells(excel_row, 1).EntireRow
+			objRange.Delete				'all other cases that are not due for a recert will be deleted
+			excel_row = excel_row - 1
+		ELSEIF recert_status = "YES" then 	'if yes, then grabs the phone numbers from the ADDR panel'
 			Call navigate_to_MAXIS_screen("STAT", "ADDR")
-			EMReadScreen phone_number_one, 16, 17, 43
+			EMReadScreen phone_number_one, 16, 17, 43	' if phone numbers are blank it doesn't add them to EXCEL
 			If phone_number_one <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 2).Value = phone_number_one
 			EMReadScreen phone_number_two, 16, 18, 43
 			If phone_number_two <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 3).Value = phone_number_two
@@ -278,7 +283,7 @@ DO 'Loops until there are no more cases in the Excel list
 			EMReadScreen worker_number, 7, 21, 21
 			objExcel.cells(excel_row, 5).Value = worker_number
 		END IF
-		Msgbox "are you on addr panel?"
+		Msgbox recert_status & "  are you on the addr panel?"
 	END IF
 	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter	
 	excel_row = excel_row + 1
@@ -301,4 +306,4 @@ NEXT
 
 STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
 
-script_end_procedure("Success! The Excel file now has all of the cases that require interviews for renewals.  Please manually review the list of privileged cases.")
+script_end_procedure("Success! The Excel file now has all of the cases that require interviews for renewals.  Please manually review the list of privileged cases (if any).")
