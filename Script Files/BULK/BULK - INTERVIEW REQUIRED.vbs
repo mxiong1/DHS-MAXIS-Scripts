@@ -167,52 +167,53 @@ For each worker in worker_number_array
 		transmit
 	End if
 
-'Grabbing case numbers from REVS for requested worker
-Excel_row = 2	'Declaring variable prior to do...loops
-
-'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
-Do
-	Do
-		'This Do...loop checks for the password prompt.
-		EMReadScreen password_prompt, 38, 2, 23
-		IF password_prompt = "ACF2/CICS PASSWORD VERIFICATION PROMPT" then MsgBox "You are locked out of your case. Type your password then try again."
-	Loop until password_prompt <> "ACF2/CICS PASSWORD VERIFICATION PROMPT"
+	'Grabbing case numbers from REVS for requested worker
+	Excel_row = 2	'Declaring variable prior to do...loops
 	
-	MAXIS_row = 7	'Setting or resetting this to look at the top of the list
-	DO		'All of this loops until MAXIS_row = 19
-		'Reading case information (case number, SNAP status, and cash status)
-		EMReadScreen case_number, 8, MAXIS_row, 6
-		EMReadScreen SNAP_status, 1, MAXIS_row, 45
-		If REPT_panel = "REVS" then 
-			EMReadScreen cash_status, 1, MAXIS_row, 34
-		ELSE 
-			EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
-		END IF
-		'Navigates though until it runs out of case numbers to read
-		IF case_number = "        " then exit do
-
-		'For some goofy reason the dash key shows up instead of the space key. No clue why. This will turn them into null variables.
-		If cash_status = "-" 	then cash_status = ""
-		If SNAP_status = "-" 	then SNAP_status = ""
-		'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
-		If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
-		If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
-		
-		'Adding the case to Excel
-		If add_case_info_to_Excel = True then
-			ObjExcel.Cells(excel_row, 1).Value = case_number
-			excel_row = excel_row + 1
-		End if
-		'On the next loop it must look to the next row
-		MAXIS_row = MAXIS_row + 1
-		'Clearing variables before next loop
-		add_case_info_to_Excel = ""
-		case_number = ""
-	Loop until MAXIS_row = 19		'Last row in REPT/REVS
-	'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
-	PF8
-	EMReadScreen last_page_check, 21, 24, 02
-Loop until last_page_check = "THIS IS THE LAST PAGE"
+	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
+	Do
+		Do
+			'This Do...loop checks for the password prompt.
+			EMReadScreen password_prompt, 38, 2, 23
+			IF password_prompt = "ACF2/CICS PASSWORD VERIFICATION PROMPT" then MsgBox "You are locked out of your case. Type your password then try again."
+		Loop until password_prompt <> "ACF2/CICS PASSWORD VERIFICATION PROMPT"
+			
+			MAXIS_row = 7	'Setting or resetting this to look at the top of the list
+			DO	'All of this loops until MAXIS_row = 19
+				'Reading case information (case number, SNAP status, and cash status)
+				EMReadScreen case_number, 8, MAXIS_row, 6
+				EMReadScreen SNAP_status, 1, MAXIS_row, 45
+				If REPT_panel = "REVS" then 
+					EMReadScreen cash_status, 1, MAXIS_row, 34
+				ELSE 
+					EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
+				END IF
+				'Navigates though until it runs out of case numbers to read
+				IF case_number = "        " then exit do
+				
+				'For some goofy reason the dash key shows up instead of the space key. No clue why. This will turn them into null variables.
+				If cash_status = "-" 	then cash_status = ""
+				If SNAP_status = "-" 	then SNAP_status = ""
+				'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
+				If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
+				If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
+				
+				'Adding the case to Excel
+				If add_case_info_to_Excel = True then
+					ObjExcel.Cells(excel_row, 1).Value = case_number
+					excel_row = excel_row + 1
+				End if
+				'On the next loop it must look to the next row
+				MAXIS_row = MAXIS_row + 1
+				'Clearing variables before next loop
+				add_case_info_to_Excel = ""
+				case_number = ""
+			Loop until MAXIS_row = 19		'Last row in REPT/REVS
+			'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
+			PF8
+			EMReadScreen last_page_check, 21, 24, 02
+	Loop until last_page_check = "THIS IS THE LAST PAGE"
+NEXT
 
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
 excel_row = 2		'Resets the variable to 2, as it needs to look through all of the cases on the Excel sheet!
@@ -244,10 +245,11 @@ DO 'Loops until there are no more cases in the Excel list
 		EMReadScreen recert_mo, 2, 9, 64
 		EMReadScreen recert_yr, 2, 9, 70
 		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
+		If recert_mo = "__" and recert_yr = "__" then recert_status = "NO" 	'in case there is no SNAP, will check for MFIP being active, if not active, then will remove from list in next IF...THEN statement.
 		IF CSR_mo = left(footer_month, 2) and CSR_yr = right(footer_year, 2) THEN recert_status = "NO"
 		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN recert_status = "YES"
-		If recert_mo = "__" and recert_yr = "__" then recert_status = "NO" 	'in case there is no SNAP, will check for MFIP being active, if not active, then will remove from list in next IF...THEN statement.
-		
+
+		MSgbox "recert month is " & recert_mo & "/" & recert_yr & vbNewline & "footer month is " & footer_month & "/" & footer_year 
 		Msgbox recert_status
 
 		'If it's not a recert, delete it from the excel list and move on with our lives
@@ -268,11 +270,13 @@ DO 'Loops until there are no more cases in the Excel list
 		IF recert_status = "YES" then 
 			Call navigate_to_MAXIS_screen("STAT", "ADDR")
 			EMReadScreen phone_number_one, 16, 17, 43
-			phone_number_one = objExcel.cells(excel_row, 2).Value = phone_number_one
+			If phone_number_one <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 2).Value = phone_number_one
 			EMReadScreen phone_number_two, 16, 18, 43
-			phone_number_two = objExcel.cells(excel_row, 3).Value = phone_number_two
+			If phone_number_two <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 3).Value = phone_number_two
 			EMReadScreen phone_number_three, 16, 19, 43
-			phone_number_three = objExcel.cells(excel_row, 4).Value = phone_number_three
+			If phone_number_three <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 4).Value = phone_number_three
+			EMReadScreen worker_number, 7, 21, 21
+			objExcel.cells(excel_row, 5).Value = worker_number
 		END IF
 		Msgbox "are you on addr panel?"
 	END IF
@@ -296,5 +300,5 @@ FOR EACH case_number in prived_case_array
 NEXT
 
 STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
-msgbox STATS_counter
+
 script_end_procedure("Success! The Excel file now has all of the cases that require interviews for renewals.  Please manually review the list of privileged cases.")
