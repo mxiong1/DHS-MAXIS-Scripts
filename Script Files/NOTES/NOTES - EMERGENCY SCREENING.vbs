@@ -57,12 +57,13 @@ STATS_denomination = "C"        'C is for each case
 'Declared variables for main script
 DIM emergency_screening_dialog, case_number, HH_members, eviction_check, utility_disconnect_check
 DIM homelessness_check, security_deposit_check, affordable_housing_yes, affordable_housing_no
-DIM EMER_HSR_manual_button, affordbable_housing, meets_residency, net_income, ButtonPressed, err_msg
-DIM footer_month, footer_year, begin_search_month, begin_search_year, EMER_type, EMER_amt_issued
-DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard, EMER_available_date, col
+DIM EMER_HSR_manual_button, affordbable_housing, meets_residency, net_income, ButtonPressed, worker_signature
+DIM err_msg, footer_month, footer_year, begin_search_month, begin_search_year, EMER_type, EMER_amt_issued
+DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard, EMER_available_date, emer_issued, col
+DIM last_page_check, crisis, EMER_last_used_dates
 
 'DIALOGS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-BeginDialog emergency_screening_dialog, 0, 0, 296, 220, "Emergency Screening dialog"
+BeginDialog emergency_screening_dialog, 0, 0, 286, 235, "Emergency Screening dialog"
   EditBox 60, 15, 65, 15, case_number
   ComboBox 255, 15, 25, 15, "1"+chr(9)+"2"+chr(9)+"3"+chr(9)+"4"+chr(9)+"5"+chr(9)+"6"+chr(9)+"7"+chr(9)+"8"+chr(9)+"9"+chr(9)+"10"+chr(9)+"11"+chr(9)+"12"+chr(9)+"13"+chr(9)+"14"+chr(9)+"15"+chr(9)+"16"+chr(9)+"17"+chr(9)+"18"+chr(9)+"19"+chr(9)+"20", HH_members
   CheckBox 15, 55, 40, 10, "Eviction", eviction_check
@@ -71,19 +72,21 @@ BeginDialog emergency_screening_dialog, 0, 0, 296, 220, "Emergency Screening dia
   CheckBox 210, 55, 65, 10, "Security deposit", security_deposit_check
   ComboBox 210, 75, 70, 15, "Select one..."+chr(9)+"Affordable"+chr(9)+"Not affordable", affordbable_housing
   ComboBox 230, 95, 50, 15, "Select one..."+chr(9)+"Yes"+chr(9)+"No", meets_residency
-  EditBox 145, 120, 130, 15, net_income
+  EditBox 150, 120, 130, 15, net_income
+  EditBox 75, 145, 95, 15, worker_signature
   ButtonGroup ButtonPressed
     OkButton 175, 145, 50, 15
     CancelButton 230, 145, 50, 15
-    PushButton 10, 145, 145, 15, "HSR Manual Emergency Assistance page ", EMER_HSR_manual_button
-  GroupBox 5, 170, 275, 35, "Info about net income/affordability:"
+    PushButton 135, 170, 145, 15, "HSR Manual Emergency Assistance page ", EMER_HSR_manual_button
   GroupBox 5, 40, 275, 30, "Crisis (Check all that apply. If none, do not check any):"
   Text 140, 20, 105, 10, "Number of EMER HH members:"
   Text 10, 100, 220, 10, "Has anyone in the HH been residing in MN for more than 30 days?"
-  Text 35, 185, 200, 10, "Information to be added to help HSR's answer the questions."
+  Text 35, 210, 200, 10, "Information to be added to help HSR's answer the questions."
   Text 10, 80, 150, 10, "Is the household's living situation affordable?"
   Text 10, 20, 45, 10, "Case number:"
   Text 10, 125, 125, 10, "What is the household's NET income?"
+  GroupBox 5, 195, 275, 35, "Info about net income/affordability:"
+  Text 10, 150, 60, 10, "Worker signature:"
 EndDialog
 
 case_number = "234076"
@@ -111,8 +114,6 @@ begin_search_year = right(begin_search_year, 2)
 begin_search_month = datepart("m", begin_search_month)
 If len(begin_search_month) = 1 then begin_search_month = "0" & begin_search_month
 
-'creating emer avialable date that is 1 day past the EMER_elig_end_date
-EMER_available_date = dateadd("d", 1, EMER_elig_end_date)
 'End of date calculations----------------------------------------------------------------------------------------------
 
 Msgbox "footer month/year: " & footer_month & "/" & footer_year & vbnewline & "begin search month: " & begin_search_month & "/" & begin_search_year
@@ -135,7 +136,8 @@ DO
 LOOP until ButtonPressed = -1	
 
 'Checking for an active MAXIS session
-Call check_for_MAXIS(False)
+Call check_for_MAXIS(True)
+'navigating to INQX'
 back_to_self
 EMWriteScreen "________", 18, 43
 EMWriteScreen case_number, 18, 43
@@ -152,18 +154,22 @@ transmit
 
 'searching for EA/EG issued on the INQD screen'
 DO	
+	row = 6
 	DO
-		row = 6
-		col = 16
-		EMSearch "E", row, col		'searching for EMER programs as they start with E'
-		If row <> 0 then 
+		EMReadScreen emer_issued, 1, row, 16		'searching for EMER programs as they start with E'
+		IF emer_issued = "E" then 
 			'reading the EMER information for EMER issuance
-			EMReadScreen EMER_type, 2, row, col
-			EMReadScreen EMER_amt_issued, 7, row, 36
+			EMReadScreen EMER_type, 2, row, 16
+			EMReadScreen EMER_amt_issued, 7, row, 39
 			EMReadScreen EMER_elig_start_date, 8, row, 62
 			EMReadScreen EMER_elig_end_date, 8, row, 73
+			msgbox emer_type
+			msgbox	EMER_amt_issued
+			msgbox	EMER_elig_start_date
+			msgbox	EMER_elig_end_date
+			exit do
 		ELSE 
-			row = row + 1			'increses row to search next row in INQD
+			row = row + 1
 		END IF
 	Loop until row = 18				'repeats until the end of the page
 		PF8
@@ -171,9 +177,15 @@ DO
 		If last_page_check <> "THIS IS THE LAST PAGE" then row = 6		're-establishes row for the new page
 LOOP UNTIL last_page_check = "THIS IS THE LAST PAGE"
 
+'creating variables and conditions for EMER screening
+EMER_available_date = dateadd("d", 1, EMER_elig_end_date)	'creating emer avialable date that is 1 day past the EMER_elig_end_date
+EMER_last_used_dates = EMER_elig_start_date & " - " & EMER_elig_end_date	'combining dates into new variable'
+If emer_issued <> "E" then	'creating variables for cases that have not had EMER issued in current 13 months
+ 	EMER_last_used_dates = "n/a"		
+	EMER_availble_date = "Currently available"
+END IF 
+
 MsgBox EMER_available_date
-MsgBox "stopscript"
-stopscript
 
 'Logic to enter what the "crisis" variable is from the checkboxes indicated
 If eviction_check = 1 then crisis = crisis & "eviction, "
@@ -187,6 +199,7 @@ Else
   crisis = left(crisis, len(crisis) - 1) & "."
 End if
 
+'deteriming 200% FPG (using last year's amounts) per HH member---handles up to 20 members
 If HH_members = "1" then monthly_standard = "1915"
 If HH_members = "2" then monthly_standard = "2585"
 If HH_members = "3" then monthly_standard = "3255"
@@ -207,5 +220,27 @@ If HH_members = "17" then monthly_standard = "12635"
 If HH_members = "18" then monthly_standard = "13305"
 If HH_members = "19" then monthly_standard = "13975"
 If HH_members = "20" then monthly_standard = "14645"
+
+If net_income < monthly_standard then POTENTIALLY_ELIG = FALSE
+
+'Msgbox with screening results. Will give the user the option to cancel the script, case note the results, or use the EMER notes script
+Screening_options = MsgBox ("Based on the information provided, this HH  . Press YES to continue to the NOTES -EMERGENCY script. Press NO to case note the emergency screening information. Press cancel to do neither, and stop the script." , vbYesNoCancel, "Screening results dialog")
+IF vbCancel then script_end_procedure("Information about the screening will not be documented in case note.")	'ends the script'
+IF vbYes then call run_from_GitHub(script_repository & "/NOTES/NOTES - EMERGENCY.vbs")	'run the NOTES EMER script
+IF vbNO then 		'just the case note option
+	'The case note
+	Call start_a_blank_CASE_NOTE
+	Call write_variable_in_CASE_NOTE("--//--//--Emergency Programs Screeening--//--//--")
+	Call write_bullet_and_variable_in_CASE_NOTE("Number of HH members", HH_members)
+	Call  write_bullet_and_variable_in_CASE_NOTE("Crisis/Type of Emergency", crisis)
+	Call write_bullet_and_variable_in_CASE_NOTE("Living situation is", affordbable_housing)
+	Call write_bullet_and_variable_in_CASE_NOTE("Does any member of the HH meet 30 day residency requirements", meets_residency)
+	Call write_bullet_and_variable_in_CASE_NOTE("Net income for HH", net_income)
+	Call write_variable_in_CASE_NOTE("---")
+	Call write_bullet_and_variable_in_CASE_NOTE("Last date EMER programs were used", EMER_last_used_dates)
+	Call write_variable_in_CASE_NOTE("* Date EMER programs will be available to HH: " & EMER_available_date)
+	Call write_variable_in_CASE_NOTE("---")
+	Call write_variable_in_CASE_NOTE(worker_signature)
+END IF 
 
 script_end_procedure("")
