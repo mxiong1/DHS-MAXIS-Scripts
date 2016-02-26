@@ -59,32 +59,38 @@ DIM emergency_screening_dialog, case_number, HH_members, eviction_check, utility
 DIM homelessness_check, security_deposit_check, affordable_housing_yes, affordable_housing_no
 DIM EMER_HSR_manual_button, affordbable_housing, meets_residency, net_income, ButtonPressed, err_msg
 DIM footer_month, footer_year, begin_search_month, begin_search_year, EMER_type, EMER_amt_issued
-DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard, EMER_available_date
+DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard, EMER_available_date, col
 
 'DIALOGS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 BeginDialog emergency_screening_dialog, 0, 0, 296, 220, "Emergency Screening dialog"
   EditBox 60, 15, 65, 15, case_number
-  ComboBox 250, 15, 25, 15, "1"+chr(9)+"2"+chr(9)+"3"+chr(9)+"4"+chr(9)+"5"+chr(9)+"6"+chr(9)+"7"+chr(9)+"8"+chr(9)+"9"+chr(9)+"10"+chr(9)+"11"+chr(9)+"12"+chr(9)+"13"+chr(9)+"14"+chr(9)+"15"+chr(9)+"16"+chr(9)+"17"+chr(9)+"18"+chr(9)+"19"+chr(9)+"20", HH_members
+  ComboBox 255, 15, 25, 15, "1"+chr(9)+"2"+chr(9)+"3"+chr(9)+"4"+chr(9)+"5"+chr(9)+"6"+chr(9)+"7"+chr(9)+"8"+chr(9)+"9"+chr(9)+"10"+chr(9)+"11"+chr(9)+"12"+chr(9)+"13"+chr(9)+"14"+chr(9)+"15"+chr(9)+"16"+chr(9)+"17"+chr(9)+"18"+chr(9)+"19"+chr(9)+"20", HH_members
   CheckBox 15, 55, 40, 10, "Eviction", eviction_check
-  CheckBox 60, 55, 70, 10, "Utility disconnect", utility_disconnect_check
-  CheckBox 135, 55, 60, 10, "Homelessness", homelessness_check
-  CheckBox 200, 55, 65, 10, "Security deposit", security_deposit_check
-  ComboBox 205, 80, 70, 15, "Select one..."+chr(9)+"Affordable"+chr(9)+"Not affordable", affordbable_housing
-  ComboBox 230, 100, 45, 15, "Select one..."+chr(9)+"Yes"+chr(9)+"No", meets_residency
+  CheckBox 65, 55, 70, 10, "Utility disconnect", utility_disconnect_check
+  CheckBox 140, 55, 60, 10, "Homelessness", homelessness_check
+  CheckBox 210, 55, 65, 10, "Security deposit", security_deposit_check
+  ComboBox 210, 75, 70, 15, "Select one..."+chr(9)+"Affordable"+chr(9)+"Not affordable", affordbable_housing
+  ComboBox 230, 95, 50, 15, "Select one..."+chr(9)+"Yes"+chr(9)+"No", meets_residency
   EditBox 145, 120, 130, 15, net_income
   ButtonGroup ButtonPressed
-    OkButton 170, 145, 50, 15
-    CancelButton 225, 145, 50, 15
+    OkButton 175, 145, 50, 15
+    CancelButton 230, 145, 50, 15
     PushButton 10, 145, 145, 15, "HSR Manual Emergency Assistance page ", EMER_HSR_manual_button
-  GroupBox 10, 165, 265, 35, "Info about net income/affordability:"
-  GroupBox 10, 40, 265, 30, "Crisis (Check all that apply. If none, do not check any):"
+  GroupBox 5, 170, 275, 35, "Info about net income/affordability:"
+  GroupBox 5, 40, 275, 30, "Crisis (Check all that apply. If none, do not check any):"
   Text 140, 20, 105, 10, "Number of EMER HH members:"
   Text 10, 100, 220, 10, "Has anyone in the HH been residing in MN for more than 30 days?"
-  Text 30, 180, 200, 10, "Information to be added to help HSR's answer the questions."
+  Text 35, 185, 200, 10, "Information to be added to help HSR's answer the questions."
   Text 10, 80, 150, 10, "Is the household's living situation affordable?"
   Text 10, 20, 45, 10, "Case number:"
   Text 10, 125, 125, 10, "What is the household's NET income?"
 EndDialog
+
+case_number = "234076"
+eviction_check = 1
+affordbable_housing = "Affordable"
+meets_residency = "Yes"
+net_income = "0"
 
 'THE SCRIPT--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 'Connecting to BlueZone, grabbing case number
@@ -100,10 +106,10 @@ footer_year = right(footer_year, 2)
 
 'creating month variable 13 months prior to current footer month/year to search for EMER programs issued
 begin_search_month = dateadd("m", -13, date)
-If len(begin_search_month) = 1 then begin_search_month = "0" & begin_search_month
 begin_search_year = datepart("yyyy", begin_search_month)
 begin_search_year = right(begin_search_year, 2)
 begin_search_month = datepart("m", begin_search_month)
+If len(begin_search_month) = 1 then begin_search_month = "0" & begin_search_month
 
 'creating emer avialable date that is 1 day past the EMER_elig_end_date
 EMER_available_date = dateadd("d", 1, EMER_elig_end_date)
@@ -130,6 +136,7 @@ LOOP until ButtonPressed = -1
 
 'Checking for an active MAXIS session
 Call check_for_MAXIS(False)
+back_to_self
 EMWriteScreen "________", 18, 43
 EMWriteScreen case_number, 18, 43
 EMWriteScreen footer_month, 20, 43	'entering current footer month/year'
@@ -144,10 +151,10 @@ EMWriteScreen "x", 11, 50		'selecting EGA'
 transmit
 
 'searching for EA/EG issued on the INQD screen'
-row = 6
-col = 16
 DO	
-	DO 
+	DO
+		row = 6
+		col = 16
 		EMSearch "E", row, col		'searching for EMER programs as they start with E'
 		If row <> 0 then 
 			'reading the EMER information for EMER issuance
