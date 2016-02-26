@@ -58,11 +58,13 @@ STATS_denomination = "C"        'C is for each case
 DIM emergency_screening_dialog, case_number, HH_members, eviction_check, utility_disconnect_check
 DIM homelessness_check, security_deposit_check, affordable_housing_yes, affordable_housing_no
 DIM EMER_HSR_manual_button, affordbable_housing, meets_residency, net_income, ButtonPressed, err_msg
+DIM footer_month, footer_year, begin_search_month, begin_search_year, EMER_type, EMER_amt_issued
+DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard
 
 'DIALOGS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 BeginDialog emergency_screening_dialog, 0, 0, 281, 220, "Emergency Screening dialog"
   EditBox 60, 15, 65, 15, case_number
-  ComboBox 245, 15, 25, 15, "1"+chr(9)+"2"+chr(9)+"3"+chr(9)+"4"+chr(9)+"5"+chr(9)+"6"+chr(9)+"7"+chr(9)+"8"+chr(9)+"9"+chr(9)+"10", HH_members
+  ComboBox 245, 15, 25, 15, "1"+chr(9)+"2"+chr(9)+"3"+chr(9)+"4"+chr(9)+"5"+chr(9)+"6"+chr(9)+"7"+chr(9)+"8"+chr(9)+"9"+chr(9)+"10"+chr(9)+"11"+chr(9)+"12"+chr(9)+"13"+chr(9)+"14"+chr(9)+"15"+chr(9)+"16"+chr(9)+"17"+chr(9)+"18"+chr(9)+"19"+chr(9)+"20", HH_members
   CheckBox 15, 55, 40, 10, "Eviction", eviction_check
   CheckBox 60, 55, 70, 10, "Utility disconnect", utility_disconnect_check
   CheckBox 135, 55, 60, 10, "Homelessness", homelessness_check
@@ -89,6 +91,19 @@ EndDialog
 EMConnect ""
 CALL MAXIS_case_number_finder(case_number)
 
+'DATE CALCULATIONS----------------------------------------------------------------------------------------------------								
+'creating current month as footer month/year'
+footer_month = datepart("m", date)				
+If len(footer_month) = 1 then footer_month = "0" & footer_month				
+footer_year = datepart("yyyy", date)				
+footer_year = right(footer_year, 2)
+'creating month variable 13 months prior to current footer month/year to search for EMER programs issued
+begin_search_month = dateadd("m", -13, footer_month)
+begin_search_year = datepart("yyyy", begin_search_month)
+begin_search_year = right(begin_search_year, 2)
+
+Msgbox "footer month/year: " & footer_month & "/" & footer_year & vbnewline & "begin search month: " & begin_search_month & "/" & begin_search_year
+
 'Running the initial dialog 
 DO	
 	DO
@@ -99,12 +114,46 @@ DO
 		IF buttonpressed = EMER_HSR_manual_button then CreateObject("WScript.Shell").Run("https://dept.hennepin.us/hsphd/manuals/hsrm/Pages/Emergency_Assistance_Policy.aspx")
 		If case_number = "" or IsNumeric(case_number) = False or len(case_number) > 8 then err_msg = err_msg & vbNewLine & "* Enter a valid case number."	
 		If HH_members = "" or IsNumeric(HH_members) = False then err_msg = err_msg & vbNewLine & "* Enter the number of household members."	
+		If affordbable_housing = "Select one..." then err_msg = err_msg & vbNewLine & "* Answer the affordable living situation question."
+		If meets_residency = "Select one..." then err_msg = err_msg & vbNewLine & "* Answer the MN residency question."
+		If net_income = "" or IsNumeric(net_income) = False then err_msg = err_msg & vbNewLine & "* Enter the household's net income."
 		IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine
 	LOOP until err_msg = ""
 LOOP until ButtonPressed = -1	
 
 'Checking for an active MAXIS session
 Call check_for_MAXIS(False)
+EMWriteScreen "________", 18, 43
+EMWriteScreen case_number, 18, 43
+EMWriteScreen footer_month, 20, 43
+EMWriteScreen footer_year, 20, 46
+Call navigate_to_MAXIS_screen("MONY", "INQX")
+EMWriteScreen begin_search_month, 6, 38
+EMWriteScreen begin_search_year, 6, 41
+EMWriteScreen footer_month, 6, 53
+EMWriteScreen footer_year, 6, 56
+EMWriteScreen "x", 9, 50
+EMWriteScreen "x", 11, 50
+transmit
+
+'searching for EA/EG issued on the INQD screen'
+row = 6
+col = 16
+DO	
+	DO 
+		EMSearch "E", row, col
+		If row <> 1 then stopscript 	
+		row = row + 1
+	Loop until row = 18
+		PF8
+		EMReadScreen last_page_check, 21, 24, 2
+		If last_page_check <> "THIS IS THE LAST PAGE" then row = 6
+LOOP UNTIL last_page_check = "THIS IS THE LAST PAGE"
+
+EMReadScreen EMER_type, 2, row, col
+EMReadScreen EMER_amt_issued, 7, row, 36
+EMReadScreen EMER_elig_start_date, 8, row, 62
+EMReadScreen EMER_elig_end_date, 8, row, 73
 
 'Logic to enter what the "crisis" variable is from the checkboxes indicated
 If eviction_check = 1 then crisis = crisis & "eviction, "
@@ -118,23 +167,24 @@ Else
   crisis = left(crisis, len(crisis) - 1) & "."
 End if
 
-Call navigate_to_MAXIS_screen("MONY", "INQX")
-EMWriteScreen begin_search_month, 6, 38
-EMWriteScreen begin_search_year, 6, 41
-EMWriteScreen end_search_month, 6, 53
-EMWriteScreen end_search_year, 6, 56
-EMWriteScreen "x", 9, 50
-EMWriteScreen "x", 11, 50
-
 If HH_members = "1" then monthly_standard = "1915"
 If HH_members = "2" then monthly_standard = "2585"
 If HH_members = "3" then monthly_standard = "3255"
-If HH_members = "4" then monthly_standard = ""
-If HH_members = "5" then monthly_standard = "1915"
-If HH_members = "6" then monthly_standard = "1915"
-If HH_members = "7" then monthly_standard = "1915"
-If HH_members = "8" then monthly_standard = "1915"
-If HH_members = "9" then monthly_standard = "1915"
-If HH_members = "10" then monthly_standard = "1915"
-
+If HH_members = "4" then monthly_standard = "3925"
+If HH_members = "5" then monthly_standard = "4595"
+If HH_members = "6" then monthly_standard = "5265"
+If HH_members = "7" then monthly_standard = "5935"
+If HH_members = "8" then monthly_standard = "6605"
+If HH_members = "9" then monthly_standard = "7275"
+If HH_members = "10" then monthly_standard = "7945"
+If HH_members = "11" then monthly_standard = "8615"
+If HH_members = "12" then monthly_standard = "9285"
+If HH_members = "13" then monthly_standard = "9955"
+If HH_members = "14" then monthly_standard = "10625"
+If HH_members = "15" then monthly_standard = "11295"
+If HH_members = "16" then monthly_standard = "11965"
+If HH_members = "17" then monthly_standard = "12635"
+If HH_members = "18" then monthly_standard = "13305"
+If HH_members = "19" then monthly_standard = "13975"
+If HH_members = "20" then monthly_standard = "14645"
 script_end_procedure("")
