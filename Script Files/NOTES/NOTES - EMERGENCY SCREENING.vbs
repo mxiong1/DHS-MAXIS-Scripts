@@ -60,7 +60,7 @@ DIM homelessness_check, security_deposit_check, affordable_housing_yes, affordab
 DIM EMER_HSR_manual_button, affordbable_housing, meets_residency, net_income, ButtonPressed, worker_signature
 DIM err_msg, footer_month, footer_year, begin_search_month, begin_search_year, EMER_type, EMER_amt_issued
 DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard, EMER_available_date, emer_issued, col
-DIM last_page_check, crisis, EMER_last_used_dates
+DIM last_page_check, crisis, EMER_last_used_dates, NOT_ELIG
 
 'DIALOGS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 BeginDialog emergency_screening_dialog, 0, 0, 286, 235, "Emergency Screening dialog"
@@ -89,6 +89,7 @@ BeginDialog emergency_screening_dialog, 0, 0, 286, 235, "Emergency Screening dia
   Text 10, 150, 60, 10, "Worker signature:"
 EndDialog
 
+'constants for testing----------------------------------------------------------------------------------------------------
 case_number = "234076"
 eviction_check = 1
 affordbable_housing = "Affordable"
@@ -113,7 +114,6 @@ begin_search_year = datepart("yyyy", begin_search_month)
 begin_search_year = right(begin_search_year, 2)
 begin_search_month = datepart("m", begin_search_month)
 If len(begin_search_month) = 1 then begin_search_month = "0" & begin_search_month
-
 'End of date calculations----------------------------------------------------------------------------------------------
 
 Msgbox "footer month/year: " & footer_month & "/" & footer_year & vbnewline & "begin search month: " & begin_search_month & "/" & begin_search_year
@@ -130,6 +130,7 @@ DO
 		If HH_members = "" or IsNumeric(HH_members) = False then err_msg = err_msg & vbNewLine & "* Enter the number of household members."	
 		If affordbable_housing = "Select one..." then err_msg = err_msg & vbNewLine & "* Answer the affordable living situation question."
 		If meets_residency = "Select one..." then err_msg = err_msg & vbNewLine & "* Answer the MN residency question."
+		If worker_signature = "" then err_msg = err_msg & vbNewLine & "* Enter your worker signature."
 		If net_income = "" or IsNumeric(net_income) = False then err_msg = err_msg & vbNewLine & "* Enter the household's net income."
 		IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine
 	LOOP until err_msg = ""
@@ -141,22 +142,22 @@ Call check_for_MAXIS(True)
 back_to_self
 EMWriteScreen "________", 18, 43
 EMWriteScreen case_number, 18, 43
-EMWriteScreen footer_month, 20, 43	'entering current footer month/year'
+EMWriteScreen footer_month, 20, 43	'entering current footer month/year
 EMWriteScreen footer_year, 20, 46
 Call navigate_to_MAXIS_screen("MONY", "INQX")
 EMWriteScreen begin_search_month, 6, 38		'entering footer month/year 13 months prior to current footer month/year'
 EMWriteScreen begin_search_year, 6, 41
-EMWriteScreen footer_month, 6, 53		'entering current footer month/year'
+EMWriteScreen footer_month, 6, 53		'entering current footer month/year
 EMWriteScreen footer_year, 6, 56
-EMWriteScreen "x", 9, 50		'selecting EA'
-EMWriteScreen "x", 11, 50		'selecting EGA'
+EMWriteScreen "x", 9, 50		'selecting EA
+EMWriteScreen "x", 11, 50		'selecting EGA
 transmit
 
-'searching for EA/EG issued on the INQD screen'
+'searching for EA/EG issued on the INQD screen
 DO	
 	row = 6
 	DO
-		EMReadScreen emer_issued, 1, row, 16		'searching for EMER programs as they start with E'
+		EMReadScreen emer_issued, 1, row, 16		'searching for EMER programs as they start with E
 		IF emer_issued = "E" then 
 			'reading the EMER information for EMER issuance
 			EMReadScreen EMER_type, 2, row, 16
@@ -179,7 +180,8 @@ LOOP UNTIL last_page_check = "THIS IS THE LAST PAGE"
 
 'creating variables and conditions for EMER screening
 EMER_available_date = dateadd("d", 1, EMER_elig_end_date)	'creating emer avialable date that is 1 day past the EMER_elig_end_date
-EMER_last_used_dates = EMER_elig_start_date & " - " & EMER_elig_end_date	'combining dates into new variable'
+EMER_last_used_dates = EMER_elig_start_date & " - " & EMER_elig_end_date	'combining dates into new variable
+
 If emer_issued <> "E" then	'creating variables for cases that have not had EMER issued in current 13 months
  	EMER_last_used_dates = "n/a"		
 	EMER_availble_date = "Currently available"
@@ -221,10 +223,16 @@ If HH_members = "18" then monthly_standard = "13305"
 If HH_members = "19" then monthly_standard = "13975"
 If HH_members = "20" then monthly_standard = "14645"
 
-If net_income < monthly_standard then POTENTIALLY_ELIG = FALSE
+NOT_ELIG = "not eligble for emergency programs due to: "
+'determining if client is potentially elig for EMER or not'
+If crisis = "no crisis given." then NOT_ELIG = NOT_ELIG & vbNewLine & "* No crisis meeting program requirements."
+If affordbable_housing = "Not affordable" then NOT_ELIG = NOT_ELIG & vbNewLine & "* The household's living situation is not affordable."
+IF meets_residency = "No" then NOT_ELIG = NOT_ELIG & vbNewLine & "* No one in the household has met 30 day residency requirements."
+If net_income < monthly_standard then NOT_ELIG = NOT_ELIG & vbNewLine & "* Net income exceeds program guidlines."
+If EMER_last_used_dates <> "n/a" then NOT_ELIG = NOT_ELIG & vbNewLine & "* Emergency funds were used within the last year from the eligibilty period."
 
 'Msgbox with screening results. Will give the user the option to cancel the script, case note the results, or use the EMER notes script
-Screening_options = MsgBox ("Based on the information provided, this HH  . Press YES to continue to the NOTES -EMERGENCY script. Press NO to case note the emergency screening information. Press cancel to do neither, and stop the script." , vbYesNoCancel, "Screening results dialog")
+Screening_options = MsgBox ("Based on the information provided, this HH is " & NOT_ELIG & ". Press YES to continue to the NOTES -EMERGENCY script. Press NO to case note the emergency screening information. Press cancel to do neither, and stop the script." , vbYesNoCancel, "Screening results dialog")
 IF vbCancel then script_end_procedure("Information about the screening will not be documented in case note.")	'ends the script'
 IF vbYes then call run_from_GitHub(script_repository & "/NOTES/NOTES - EMERGENCY.vbs")	'run the NOTES EMER script
 IF vbNO then 		'just the case note option
