@@ -60,7 +60,7 @@ DIM homelessness_check, security_deposit_check, affordable_housing_yes, affordab
 DIM EMER_HSR_manual_button, affordbable_housing, meets_residency, net_income, ButtonPressed, worker_signature
 DIM err_msg, footer_month, footer_year, begin_search_month, begin_search_year, EMER_type, EMER_amt_issued
 DIM EMER_elig_start_date, EMER_elig_end_date, monthly_standard, EMER_available_date, emer_issued, col
-DIM last_page_check, crisis, EMER_last_used_dates, NOT_ELIG
+DIM last_page_check, crisis, EMER_last_used_dates, NOT_ELIG, Screening_options, script_repository
 
 'DIALOGS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 BeginDialog emergency_screening_dialog, 0, 0, 286, 235, "Emergency Screening dialog"
@@ -95,6 +95,7 @@ eviction_check = 1
 affordbable_housing = "Affordable"
 meets_residency = "Yes"
 net_income = "0"
+worker_signature = "Ilse F."
 
 'THE SCRIPT--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 'Connecting to BlueZone, grabbing case number
@@ -184,10 +185,8 @@ EMER_last_used_dates = EMER_elig_start_date & " - " & EMER_elig_end_date	'combin
 
 If emer_issued <> "E" then	'creating variables for cases that have not had EMER issued in current 13 months
  	EMER_last_used_dates = "n/a"		
-	EMER_availble_date = "Currently available"
+	EMER_available_date = "Currently available"
 END IF 
-
-MsgBox EMER_available_date
 
 'Logic to enter what the "crisis" variable is from the checkboxes indicated
 If eviction_check = 1 then crisis = crisis & "eviction, "
@@ -198,7 +197,7 @@ If eviction_check = 0 and utility_disconnect_check = 0 and homelessness_check = 
   crisis = "no crisis given."
 Else
   crisis = trim(crisis)
-  crisis = left(crisis, len(crisis) - 1) & "."
+  crisis = left(crisis, len(crisis) - 1)
 End if
 
 'deteriming 200% FPG (using last year's amounts) per HH member---handles up to 20 members
@@ -223,22 +222,24 @@ If HH_members = "18" then monthly_standard = "13305"
 If HH_members = "19" then monthly_standard = "13975"
 If HH_members = "20" then monthly_standard = "14645"
 
-NOT_ELIG = "not eligble for emergency programs due to: "
+NOT_ELIG = "appears to NOT be eligble for emergency programs because: "
 'determining if client is potentially elig for EMER or not'
 If crisis = "no crisis given." then NOT_ELIG = NOT_ELIG & vbNewLine & "* No crisis meeting program requirements."
 If affordbable_housing = "Not affordable" then NOT_ELIG = NOT_ELIG & vbNewLine & "* The household's living situation is not affordable."
 IF meets_residency = "No" then NOT_ELIG = NOT_ELIG & vbNewLine & "* No one in the household has met 30 day residency requirements."
-If net_income < monthly_standard then NOT_ELIG = NOT_ELIG & vbNewLine & "* Net income exceeds program guidlines."
+If net_income > monthly_standard then NOT_ELIG = NOT_ELIG & vbNewLine & "* Net income exceeds program guidlines."
+IF net_income = "0" then NOT_ELIG = NOT_ELIG & vbNewLine & "* HH does not have current/ongoing income."
 If EMER_last_used_dates <> "n/a" then NOT_ELIG = NOT_ELIG & vbNewLine & "* Emergency funds were used within the last year from the eligibilty period."
 
 'Msgbox with screening results. Will give the user the option to cancel the script, case note the results, or use the EMER notes script
-Screening_options = MsgBox ("Based on the information provided, this HH is " & NOT_ELIG & ". Press YES to continue to the NOTES -EMERGENCY script. Press NO to case note the emergency screening information. Press cancel to do neither, and stop the script." , vbYesNoCancel, "Screening results dialog")
-IF vbCancel then script_end_procedure("Information about the screening will not be documented in case note.")	'ends the script'
-IF vbYes then call run_from_GitHub(script_repository & "/NOTES/NOTES - EMERGENCY.vbs")	'run the NOTES EMER script
-IF vbNO then 		'just the case note option
+Screening_options = MsgBox ("Based on the information provided, this HH " & NOT_ELIG & vbNewLine & vbNewLine &"The last date emergency funds were used was: " & EMER_last_used_dates & "." & _ 
+vbNewLine & "Emergency programs will be available to the HH again on: " & EMER_available_date & "." & vbNewLine & vbNewLine & "Press YES to continue to the NOTES -EMERGENCY script. Press NO to case note the emergency screening information. Press cancel to do neither, and stop the script." , vbYesNoCancel, "Screening results dialog")
+IF Screening_options = vbCancel then script_end_procedure("Information about the screening will not be documented in case note.")	'ends the script'
+IF Screening_options = vbYes then call run_from_GitHub(script_repository & "/NOTES/NOTES - EMERGENCY.vbs")	'run the NOTES EMER script
+IF Screening_options = vbNO then 		'just the case note option
 	'The case note
 	Call start_a_blank_CASE_NOTE
-	Call write_variable_in_CASE_NOTE("--//--//--Emergency Programs Screeening--//--//--")
+	Call write_variable_in_CASE_NOTE("--//--Emergency Programs Screeening--//--")
 	Call write_bullet_and_variable_in_CASE_NOTE("Number of HH members", HH_members)
 	Call  write_bullet_and_variable_in_CASE_NOTE("Crisis/Type of Emergency", crisis)
 	Call write_bullet_and_variable_in_CASE_NOTE("Living situation is", affordbable_housing)
