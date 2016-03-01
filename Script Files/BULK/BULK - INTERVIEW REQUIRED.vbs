@@ -165,8 +165,6 @@ For each worker in worker_number_array
 		transmit
 	End if
 
-	Msgbox worker_ID
-
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
 	Do
 		Do
