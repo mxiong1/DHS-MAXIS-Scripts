@@ -249,6 +249,11 @@ IF Screening_options = vbNO then
 	Call write_bullet_and_variable_in_CASE_NOTE("Living situation is", affordbable_housing)
 	Call write_bullet_and_variable_in_CASE_NOTE("Does any member of the HH meet 30 day residency requirements", meets_residency)
 	Call write_bullet_and_variable_in_CASE_NOTE("Net income for HH", net_income)
+	IF screening_determination = "potentially eligible for emergency programs." then
+		Call write_variable_in_CASE_NOTE("* HH is potentially eligible for EMER programs.")
+	Else
+		Call write_variable_in_CASE_NOTE("* HH does not appear eligible for EMER programs.")
+	END IF
 	Call write_variable_in_CASE_NOTE("---")
 	Call write_bullet_and_variable_in_CASE_NOTE("Last date EMER programs were used", EMER_last_used_dates)
 	Call write_variable_in_CASE_NOTE("* Date EMER programs will be available to HH: " & EMER_available_date)
