@@ -44,11 +44,11 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 END IF
 'END FUNCTIONS LIBRARY BLOCK================================================================================================
 
-'Required for statistical purposes==========================================================================================	
-STATS_counter = 1			     'sets the stats counter at one	
-STATS_manualtime = 39			 'manual run time in seconds	
-STATS_denomination = "C"		 'C is for each case	
-'END OF stats block==============================================================================================	
+'Required for statistical purposes==========================================================================================
+STATS_counter = 1			     'sets the stats counter at one
+STATS_manualtime = 39			 'manual run time in seconds
+STATS_denomination = "C"		 'C is for each case
+'END OF stats block==============================================================================================
 
 BeginDialog appointment_required_dialog, 0, 0, 286, 80, "Appointment required dialog"
   DropListBox 70, 10, 60, 15, "REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
@@ -65,8 +65,8 @@ EndDialog
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
-'Grabbing the worker's X number to autofill into the dialog 
-CALL find_variable("User: ", worker_number, 7) 
+'Grabbing the worker's X number to autofill into the dialog
+CALL find_variable("User: ", worker_number, 7)
 worker_number = worker_number
 
 ''///////////////remove after testing
@@ -75,60 +75,62 @@ footer_selection = "Current month plus one"
 worker_number = "x127FD5"
 
 'DISPLAYS DIALOG
-DO                              
-	err_msg = ""	
-	Dialog appointment_required_dialog	
-	If ButtonPressed = 0 then StopScript	
-	If worker_number = "" or len(worker_number) <> 7 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."	
+DO
+	err_msg = ""
+	Dialog appointment_required_dialog
+	If ButtonPressed = 0 then StopScript
+	If worker_number = "" or len(worker_number) <> 7 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."
 	If footer_selection = "Select one..." then err_msg = err_msg & vbNewLine & "* Select the time period for your list."
 	If REPT_panel = "REPT/REVW" and footer_selection = "Current month plus two" then err_msg = err_msg & VbNewLine & "* This is time period is not an option REPT/REVW. Please select a new time period."
 	If (REPT_panel = "REPT/REVS" and footer_selection = "Current month plus two" and datePart("d", date) < 16) then err_msg = err_msg & VbNewLine & "* This is not a valid time period for REPT/REVS until the 16th of the month. Please select a new time period."
-	IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine	
-LOOP until err_msg = ""	
+	IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine
+LOOP until err_msg = ""
 
 'creating dates for the footer_selection variable
-If footer_selection = "Current month" then 
+If footer_selection = "Current month" then
 	footer_month = DatePart("M", date)
-	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
+	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month
 	footer_year = DatePart("YYYY", date)
 	footer_year = right(footer_year, 2)
 ELSEif footer_selection = "Current month plus one" then
 	footer_month = dateadd("M", 1, date)
 	footer_month = datePart("M", footer_month)
-	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
+	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month
 	footer_year = DatePart("YYYY", date)
 	footer_year = right(footer_year, 2)
 ELSEIF footer_selection = "Current month plus two" then
 	footer_month = dateadd("M", 2, date)
 	footer_month = datePart("M", footer_month)
-	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month	
+	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month
 	footer_year = DatePart("YYYY", date)
 	footer_year = right(footer_year, 2)
-END IF 
+END IF
 
-'creating current month date for REVS panel 
+'creating current month date for REVS panel
 current_month = DatePart("M", date)
 IF len(current_month) = 1 THEN current_month = "0" & current_month
 current_year = DatePart("YYYY", date)
 current_year = right(current_year, 2)
+
+msgbox footer_month & footer_year
 
 CALL check_for_MAXIS(false)		'Checking for active MAXIS session
 'We need to get back to SELF and manually update the footer month
 back_to_self
 REPT_panel = right(REPT_panel, 4)	're-establishing variable to exclude all but the last 4 characters to the right
 EMWriteScreen "________", 18, 43
-	'writing in 
-If footer_selection = "Current month plus two" then 
+	'writing in
+If footer_selection = "Current month plus two" then
 	EMWriteScreen current_month, 20, 43
 	EMWriteScreen current_year, 20, 46
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
 	EMWriteScreen footer_month, 20, 55
 	EMWriteScreen footer_year, 20, 58
-ELSE 	
+ELSE
 	EMWriteScreen footer_month, 20, 43
 	EMWriteScreen footer_year, 20, 46
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
-END IF 
+END IF
 transmit
 
 'Opening the Excel file, (now that the dialog is done)
@@ -147,7 +149,7 @@ objExcel.cells(1, 6).Value = "Privileged Cases"
 
 FOR i = 1 to 6		'formatting the cells'
 	objExcel.Cells(1, i).Font.Bold = True		'bold font'
-	objExcel.Columns(i).AutoFit()				'sizing the colums'
+	objExcel.Columns(i).AutoFit()				'sizing the columns'
 NEXT
 
 'Splitting array for use by the for...next statement
@@ -169,7 +171,7 @@ For each worker in worker_number_array
 
 	'Grabbing case numbers from REVS for requested worker
 	Excel_row = 2	'Declaring variable prior to do...loops
-	
+
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
 	Do
 		Do
@@ -177,27 +179,27 @@ For each worker in worker_number_array
 			EMReadScreen password_prompt, 38, 2, 23
 			IF password_prompt = "ACF2/CICS PASSWORD VERIFICATION PROMPT" then MsgBox "You are locked out of your case. Type your password then try again."
 		Loop until password_prompt <> "ACF2/CICS PASSWORD VERIFICATION PROMPT"
-			
+
 			MAXIS_row = 7	'Setting or resetting this to look at the top of the list
 			DO	'All of this loops until MAXIS_row = 19
 				'Reading case information (case number, SNAP status, and cash status)
 				EMReadScreen case_number, 8, MAXIS_row, 6
 				EMReadScreen SNAP_status, 1, MAXIS_row, 45
-				If REPT_panel = "REVS" then 
+				If REPT_panel = "REVS" then
 					EMReadScreen cash_status, 1, MAXIS_row, 34
-				ELSE 
+				ELSE
 					EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
 				END IF
 				'Navigates though until it runs out of case numbers to read
 				IF case_number = "        " then exit do
-				
+
 				'For some goofy reason the dash key shows up instead of the space key. No clue why. This will turn them into null variables.
 				If cash_status = "-" 	then cash_status = ""
 				If SNAP_status = "-" 	then SNAP_status = ""
 				'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
 				If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
 				If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
-				
+
 				'Adding the case to Excel
 				If add_case_info_to_Excel = True then
 					ObjExcel.Cells(excel_row, 1).Value = case_number
@@ -221,6 +223,7 @@ excel_row = 2		'Resets the variable to 2, as it needs to look through all of the
 DO 'Loops until there are no more cases in the Excel list
 	'Grabs the case number
 	case_number = objExcel.cells(excel_row, 1).Value
+	If case_number = "" then exit do
 	'Goes to STAT/REVW
 	CALL navigate_to_MAXIS_screen("STAT", "REVW")
 
@@ -247,9 +250,9 @@ DO 'Loops until there are no more cases in the Excel list
 		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
 		If recert_mo = "__" and recert_yr = "__" then recert_status = "NO" 	'in case there is no SNAP, will check for MFIP being active, if not active, then will remove from list in next IF...THEN statement.
 		IF CSR_mo = left(footer_month, 2) and CSR_yr = right(footer_year, 2) THEN recert_status = "NO"
-		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN 
+		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN
 			recert_status = "YES"
-		ELSE 
+		ELSE
 			recert_status = "NO"
 		END IF
 
@@ -262,11 +265,11 @@ DO 'Loops until there are no more cases in the Excel list
 			EMReadScreen MFIP_status_check, 4, 6, 74
 			If MFIP_prog_check = "MF" AND MFIP_status_check = "ACTV" THEN 'if MFIP is active, then case will not be deleted.
 				recert_status = "YES"
-			ELSE 
+			ELSE
 				recert_status = "NO"
 			END If
 		END IF
-		
+
 		'If it's not a recert, delete it from the excel list and move on with our lives
 		If recert_status = "NO" then
 			SET objRange = objExcel.Cells(excel_row, 1).EntireRow
@@ -285,7 +288,7 @@ DO 'Loops until there are no more cases in the Excel list
 		END IF
 		Msgbox recert_status & "  are you on the addr panel?"
 	END IF
-	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter	
+	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter
 	excel_row = excel_row + 1
 LOOP UNTIL objExcel.Cells(excel_row, 1).Value = ""	'looping until the list of cases to check for recert is complete
 
