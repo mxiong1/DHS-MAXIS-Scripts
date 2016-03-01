@@ -172,7 +172,8 @@ DO
 LOOP UNTIL last_page_check = "THIS IS THE LAST PAGE"
 
 'creating variables and conditions for EMER screening
-EMER_available_date = dateadd("d", 1, EMER_elig_end_date)	'creating emer available date that is 1 day past the EMER_elig_end_date
+New_EMER_year = dateadd("YYYY", 1, EMER_elig_end_date)
+EMER_available_date = dateadd("d", 1, New_EMER_year)	'creating emer available date that is 1 day & 1 year past the EMER_elig_end_date
 EMER_last_used_dates = EMER_elig_start_date & " - " & EMER_elig_end_date	'combining dates into new variable
 
 If emer_issued <> "E" then	'creating variables for cases that have not had EMER issued in current 13 months
