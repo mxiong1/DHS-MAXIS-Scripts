@@ -65,21 +65,16 @@ EndDialog
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
-'Grabbing the worker's X number to autofill into the dialog
+'Grabbing the worker's X number to auto-fill into the dialog
 CALL find_variable("User: ", worker_number, 7)
 worker_number = worker_number
-
-''///////////////remove after testing
-REPT_panel = "REPT/REVW"
-footer_selection = "Current month plus one"
-worker_number = "x127FD5"
 
 'DISPLAYS DIALOG
 DO
 	err_msg = ""
 	Dialog appointment_required_dialog
 	If ButtonPressed = 0 then StopScript
-	If worker_number = "" or len(worker_number) <> 7 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."
+	If worker_number = "" then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."
 	If footer_selection = "Select one..." then err_msg = err_msg & vbNewLine & "* Select the time period for your list."
 	If REPT_panel = "REPT/REVW" and footer_selection = "Current month plus two" then err_msg = err_msg & VbNewLine & "* This is time period is not an option REPT/REVW. Please select a new time period."
 	If (REPT_panel = "REPT/REVS" and footer_selection = "Current month plus two" and datePart("d", date) < 16) then err_msg = err_msg & VbNewLine & "* This is not a valid time period for REPT/REVS until the 16th of the month. Please select a new time period."
@@ -111,8 +106,6 @@ current_month = DatePart("M", date)
 IF len(current_month) = 1 THEN current_month = "0" & current_month
 current_year = DatePart("YYYY", date)
 current_year = right(current_year, 2)
-
-msgbox footer_month & footer_year
 
 CALL check_for_MAXIS(false)		'Checking for active MAXIS session
 'We need to get back to SELF and manually update the footer month
@@ -152,6 +145,9 @@ FOR i = 1 to 6		'formatting the cells'
 	objExcel.Columns(i).AutoFit()				'sizing the columns'
 NEXT
 
+'Grabbing case numbers from REVS for requested worker
+Excel_row = 2	'Declaring variable prior to do...loops
+
 'Splitting array for use by the for...next statement
 worker_number_array = split(worker_number, ",")
 For each worker in worker_number_array
@@ -169,8 +165,7 @@ For each worker in worker_number_array
 		transmit
 	End if
 
-	'Grabbing case numbers from REVS for requested worker
-	Excel_row = 2	'Declaring variable prior to do...loops
+	Msgbox worker_ID
 
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
 	Do
@@ -256,8 +251,6 @@ DO 'Loops until there are no more cases in the Excel list
 			recert_status = "NO"
 		END IF
 
-		MSgbox "recert month is " & recert_mo & "/" & recert_yr & vbNewline & "footer month is " & footer_month & "/" & footer_year & vbnewLine & recert_status
-
 		'checking for ACTV MFIP'
 		IF recert_status = "NO" THEN
 			Call navigate_to_MAXIS_screen("STAT", "PROG")
@@ -286,7 +279,6 @@ DO 'Loops until there are no more cases in the Excel list
 			EMReadScreen worker_number, 7, 21, 21
 			objExcel.cells(excel_row, 5).Value = worker_number
 		END IF
-		Msgbox recert_status & "  are you on the addr panel?"
 	END IF
 	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter
 	excel_row = excel_row + 1
