@@ -243,6 +243,13 @@ script_array_BULK_list(script_num).description 			= "Pulls a list of cases in RE
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_BULK_list(script_num)		'Resets the array to add one more element to it
 Set script_array_BULK_list(script_num) = new script		'Set this array element to be a new script. Script details below...
+script_array_BULK_list(script_num).script_name 			= "INTERVIEW REQUIRED"
+script_array_BULK_list(script_num).file_name			= "BULK - INTERVIEW REQUIRED.vbs"
+script_array_BULK_list(script_num).description 			= "Pulls a list of cases and phone numbers that require an interview for recertification (SNAP/MFIP)."
+
+script_num = script_num + 1								'Increment by one
+ReDim Preserve script_array_BULK_list(script_num)		'Resets the array to add one more element to it
+Set script_array_BULK_list(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_BULK_list(script_num).script_name 			= "LTC-GRH List Gen"
 script_array_BULK_list(script_num).file_name			= "BULK - LTC-GRH LIST GENERATOR.vbs"
 script_array_BULK_list(script_num).description 			= "Creates a list of FACIs, AREPs, and waiver types assigned to the various cases in a caseload(s)."
