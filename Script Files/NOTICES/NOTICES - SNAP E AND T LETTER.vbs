@@ -56,7 +56,7 @@ county_FSET_offices = array("")
 'Array listed above Dialog as below the dialog, the droplist appeared blank
 'Creates an array of county FSET offices, which can be dynamically called in scripts which need it (SNAP ET LETTER for instance)
 'Certain counties are commented out as they did not submit information about their E & T site, but can be easily rendered if they provide them
-IF worker_county_code = "x101" THEN county_FSET_offices = array("Aitkin Workforce Center")
+'IF worker_county_code = "x101" THEN county_FSET_offices = array("Aitkin Workforce Center")
 IF worker_county_code = "x102" THEN county_FSET_offices = array("Minnesota WorkForce Center Blaine")
 IF worker_county_code = "x103" THEN county_FSET_offices = array("Rural MN CEP Detroit Lakes")
 IF worker_county_code = "x104" THEN county_FSET_offices = array("Select one...", "RMCEP", "MCT", "Leach Lake New", "Red Lake Oshkiimaajitahdah")
@@ -99,7 +99,7 @@ IF worker_county_code = "x140" THEN county_FSET_offices = array("MVAC")
 IF worker_county_code = "x141" THEN county_FSET_offices = array("Marshall WorkForce Center")
 IF worker_county_code = "x142" THEN county_FSET_offices = array("Marshall WorkForce Center")
 IF worker_county_code = "x143" THEN county_FSET_offices = array("Mahnomen County Human Services")
-IF worker_county_code = "x144" THEN county_FSET_offices = array("Marshall County Social Services")
+'IF worker_county_code = "x144" THEN county_FSET_offices = array("Marshall County Social Services")
 IF worker_county_code = "x145" THEN county_FSET_offices = array("Fairmont Workforce Center Martin County")
 IF worker_county_code = "x146" THEN county_FSET_offices = array("Central MN Jobs and Training Services Hutchinson")
 IF worker_county_code = "x147" THEN county_FSET_offices = array("Central MN Jobs and Training Services Litchfield")
@@ -124,7 +124,7 @@ IF worker_county_code = "x165" THEN county_FSET_offices = array("Central MN Jobs
 'IF worker_county_code = "x166" THEN county_FSET_offices = array("Select one...",
 IF worker_county_code = "x167" THEN county_FSET_offices = array("Southwest MN Private Industry Council Inc. Luverne")
 IF worker_county_code = "x168" THEN county_FSET_offices = array("Roseau County Social Services")
-IF worker_county_code = "x169" THEN county_FSET_offices = array("Select one...", "MN Workforce Center: Duluth", "Minnesota WorkForce Center: Virginia", "Minnesota Workforce Center: Hibbing")
+IF worker_county_code = "x169" THEN county_FSET_offices = array("Select one...", "Minnesota WorkForce Center: Duluth", "Minnesota WorkForce Center: Virginia", "Minnesota WorkForce Center: Hibbing")
 'IF worker_county_code = "x170" THEN county_FSET_offices = array("Select one...",
 IF worker_county_code = "x171" THEN county_FSET_offices = array("Central MN Jobs and Training Services Monticello")
 'IF worker_county_code = "x172" THEN county_FSET_offices = array("Select one...",
@@ -259,7 +259,8 @@ DO
 		worker_county_code = "x129" OR _
 		worker_county_code = "x133" OR _
 		worker_county_code = "x136" OR _
-		worker_county_code = "x139" THEN
+		worker_county_code = "x139" OR _
+		worker_county_code = "x144" THEN
 			script_end_procedure ("Your agency is exempt from ABAWD work requirements through 09/30/16." & vbNewLine & vbNewLine & " Please refer to TE02.05.69 for reference.")
 	ElseIF worker_county_code = "x127" THEN
 		Dialog SNAPET_Hennepin_dialog
@@ -1063,6 +1064,7 @@ EMReadScreen LETR_check, 4, 2, 49
 If LETR_check = "LETR" then script_end_procedure("You are not able to go into update mode. Did you enter in inquiry by mistake? Please try again in production.")
 
 'Writes the info into the LETR.
+IF len(appointment_time_prefix_editbox) = 1 THEN appointment_time_prefix_editbox = "0" & appointment_time_prefix_editbox 'This prevents the letter from being cancelled due to single digit hour
 EMWriteScreen first_name & " " & last_name, 4, 28
 call create_MAXIS_friendly_date_three_spaces_between(appointment_date, 0, 6, 28)
 EMWriteScreen appointment_time_prefix_editbox, 7, 28
@@ -1094,7 +1096,7 @@ If manual_referral <> "Select one..." then 					'if banked months or student are
 	EMWriteScreen member_number, 8, 9									'enters member number
 	Call create_MAXIS_friendly_date(appointment_date, 0, 8, 65)			'enters the E & T referral date
 	If manual_referral = "Banked months" then 
-		EMWriteScreen "Banked AWAWD month referral, initial month", 17, 6	'DHS wants these referrals marked, this marks them
+		EMWriteScreen "Banked ABAWD month referral, initial month", 17, 6	'DHS wants these referrals marked, this marks them
 	ELSEIF manual_referral = "Student" then
 		EMWriteScreen "Student", 17, 6
 	ELSEIF manual_referral = "Working with CBO" then 

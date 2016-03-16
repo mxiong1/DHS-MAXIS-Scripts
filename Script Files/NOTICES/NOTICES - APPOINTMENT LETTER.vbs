@@ -306,6 +306,8 @@ EMConnect ""
 
 'Searches for a case number
 call MAXIS_case_number_finder(case_number)
+'restricting the usage for Hennepin County users
+If worker_county_code = "x127" then script_end_procedure ("The Appointment Letter script is not available to Hennepin users at this time. Contact an alpha user, or your supervisor if you have questions. Thank you.")
 
 
 'This Do...loop shows the appointment letter dialog, and contains logic to require most fields.
@@ -468,7 +470,7 @@ ELSEIF worker_county_code = "x124" THEN
     agency_address.city = "Albert Lea"
     agency_address.zip = "56007"
 ELSEIF worker_county_code = "x125" THEN
-    agency_address.street = "469 12th Street"
+    agency_address.street = "426 West Avenue"
     agency_address.city = "Red Wing"
     agency_address.zip = "55066"
 ELSEIF worker_county_code = "x126" THEN

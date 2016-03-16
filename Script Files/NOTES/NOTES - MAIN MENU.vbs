@@ -138,7 +138,7 @@ ReDim Preserve script_array_0_to_C(script_num)			'Resets the array to add one mo
 Set script_array_0_to_C(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_0_to_C(script_num).script_name				= "AREP Form Received"
 script_array_0_to_C(script_num).file_name				= "NOTES - AREP FORM RECEIVED.vbs"
-script_array_0_to_C(script_num).description				= "NEW 02/2016!!! Template for when you receive an AREP form."
+script_array_0_to_C(script_num).description				= "NEW 02/2016!!! Template for when you receive an Authorized Representative (AREP) form."
 
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_0_to_C(script_num)			'Resets the array to add one more element to it
@@ -206,17 +206,16 @@ script_array_0_to_C(script_num).description				= "Template for the Combined Annu
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_0_to_C(script_num)			'Resets the array to add one more element to it
 Set script_array_0_to_C(script_num) = new script		'Set this array element to be a new script. Script details below...
-script_array_0_to_C(script_num).script_name				= "CSR"
-script_array_0_to_C(script_num).file_name				= "NOTES - CSR.vbs"
-script_array_0_to_C(script_num).description				= "Template for the CSR.*"
-
-script_num = script_num + 1								'Increment by one
-ReDim Preserve script_array_0_to_C(script_num)			'Resets the array to add one more element to it
-Set script_array_0_to_C(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_0_to_C(script_num).script_name				= "County Burial Application"
 script_array_0_to_C(script_num).file_name				= "NOTES - COUNTY BURIAL APPLICATION.vbs"
 script_array_0_to_C(script_num).description				= "Template for the County Burial Application.*"
 
+script_num = script_num + 1								'Increment by one
+ReDim Preserve script_array_0_to_C(script_num)			'Resets the array to add one more element to it
+Set script_array_0_to_C(script_num) = new script		'Set this array element to be a new script. Script details below...
+script_array_0_to_C(script_num).script_name				= "CSR"
+script_array_0_to_C(script_num).file_name				= "NOTES - CSR.vbs"
+script_array_0_to_C(script_num).description				= "Template for the Combined Six-month Report (CSR).*"
 
 
 
@@ -352,7 +351,7 @@ ReDim Preserve script_array_G_to_L(script_num)			'Resets the array to add one mo
 Set script_array_G_to_L(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_G_to_L(script_num).script_name 			= "HC ICAMA"
 script_array_G_to_L(script_num).file_name				= "NOTES - HC ICAMA.vbs"
-script_array_G_to_L(script_num).description				= "NEW 02/2016!!! Template for HC ICAMAs."
+script_array_G_to_L(script_num).description				= "NEW 02/2016!!! Template for HC Interstate Compact on Adoption and Medical Assistance (HC ICAMA)."
 
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_G_to_L(script_num)			'Resets the array to add one more element to it
@@ -367,13 +366,6 @@ Set script_array_G_to_L(script_num) = new script		'Set this array element to be 
 script_array_G_to_L(script_num).script_name 			= "HCAPP"
 script_array_G_to_L(script_num).file_name				= "NOTES - HCAPP.vbs"
 script_array_G_to_L(script_num).description				= "Template for HCAPPs.*"
-
-script_num = script_num + 1								'Increment by one
-ReDim Preserve script_array_G_to_L(script_num)			'Resets the array to add one more element to it
-Set script_array_G_to_L(script_num) = new script		'Set this array element to be a new script. Script details below...
-script_array_G_to_L(script_num).script_name 			= "HH comp change"
-script_array_G_to_L(script_num).file_name				= "NOTES - CHANGE REPORTED.vbs"
-script_array_G_to_L(script_num).description				= "Template for when you update the HH comp of a case."
 
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_G_to_L(script_num)			'Resets the array to add one more element to it
@@ -433,6 +425,7 @@ script_array_G_to_L(script_num).description				= "Template for the sponsor incom
 
 
 
+
 '-------------------------------------------------------------------------------------------------------------------------M through Q
 'Resetting the variable
 script_num = 0
@@ -466,20 +459,6 @@ script_array_M_to_Q(script_num).description				= "Template for noting when closi
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
 Set script_array_M_to_Q(script_num) = new script		'Set this array element to be a new script. Script details below...
-script_array_M_to_Q(script_num).script_name 			= "MSQ"
-script_array_M_to_Q(script_num).file_name				= "NOTES - MSQ.vbs"
-script_array_M_to_Q(script_num).description				= "NEW 02/2016!!! Template for noting MSQs."
-
-script_num = script_num + 1								'Increment by one
-ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
-Set script_array_M_to_Q(script_num) = new script		'Set this array element to be a new script. Script details below...
-script_array_M_to_Q(script_num).script_name 			= "Mileage reimbursement request"
-script_array_M_to_Q(script_num).file_name				= "NOTES - MILEAGE REIMBURSEMENT REQUEST.vbs"
-script_array_M_to_Q(script_num).description				= "Template for actions taken on medical mileage reimbursements."
-
-script_num = script_num + 1								'Increment by one
-ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
-Set script_array_M_to_Q(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_M_to_Q(script_num).script_name 			= "MNsure - Documents requested"
 script_array_M_to_Q(script_num).file_name				= "NOTES - MNSURE - DOCUMENTS REQUESTED.vbs"
 script_array_M_to_Q(script_num).description				= "Template for when MNsure documents have been requested."
@@ -494,16 +473,23 @@ script_array_M_to_Q(script_num).description				= "Template for when MNsure retro
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
 Set script_array_M_to_Q(script_num) = new script		'Set this array element to be a new script. Script details below...
+script_array_M_to_Q(script_num).script_name 			= "MSQ"
+script_array_M_to_Q(script_num).file_name				= "NOTES - MSQ.vbs"
+script_array_M_to_Q(script_num).description				= "NEW 02/2016!!! Template for noting Medical Service Questionaires (MSQ)."
+
+script_num = script_num + 1								'Increment by one
+ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
+Set script_array_M_to_Q(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_M_to_Q(script_num).script_name 			= "MTAF"
 script_array_M_to_Q(script_num).file_name				= "NOTES - MTAF.vbs"
-script_array_M_to_Q(script_num).description				= "Template for the MTAF form."
+script_array_M_to_Q(script_num).description				= "Template for the MN Transition Application form (MTAF)."
 
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
 Set script_array_M_to_Q(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_M_to_Q(script_num).script_name 			= "OHP Received"
 script_array_M_to_Q(script_num).file_name				= "NOTES - OHP RECEIVED.vbs"
-script_array_M_to_Q(script_num).description				= "NEW 02/2016!!! Template for noting that an OHP was received."
+script_array_M_to_Q(script_num).description				= "NEW 02/2016!!! Template for noting Out of Home Placement (OHP)."
 
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_M_to_Q(script_num)			'Resets the array to add one more element to it
@@ -528,6 +514,7 @@ script_array_M_to_Q(script_num).description				= "Template for documenting proof
 
 
 
+
 '-------------------------------------------------------------------------------------------------------------------------R through Z
 'Resetting the variable
 script_num = 0
@@ -540,9 +527,23 @@ script_array_R_to_Z(script_num).description				= "Template for noting program re
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_R_to_Z(script_num)			'Resets the array to add one more element to it
 Set script_array_R_to_Z(script_num) = new script		'Set this array element to be a new script. Script details below...
+script_array_R_to_Z(script_num).script_name 			= "Significant Change"
+script_array_R_to_Z(script_num).file_name				= "NOTES - SIGNIFICANT CHANGE.vbs"
+script_array_R_to_Z(script_num).description				= "Template for noting Significant Change information."
+
+script_num = script_num + 1								'Increment by one
+ReDim Preserve script_array_R_to_Z(script_num)			'Resets the array to add one more element to it
+Set script_array_R_to_Z(script_num) = new script		'Set this array element to be a new script. Script details below...
 script_array_R_to_Z(script_num).script_name 			= "SNAP case review"
 script_array_R_to_Z(script_num).file_name				= "NOTES - SNAP CASE REVIEW.vbs"
 script_array_R_to_Z(script_num).description				= "Template for SNAP reviewers to use that will case note the status SNAP quality review."
+
+script_num = script_num + 1								'Increment by one
+ReDim Preserve script_array_R_to_Z(script_num)			'Resets the array to add one more element to it
+Set script_array_R_to_Z(script_num) = new script		'Set this array element to be a new script. Script details below...
+script_array_R_to_Z(script_num).script_name 			= "Submit case for SNAP review"
+script_array_R_to_Z(script_num).file_name				= "NOTES - SUBMIT CASE FOR SNAP REVIEW.vbs"
+script_array_R_to_Z(script_num).description				= "Template for when a worker sends a case to be reviewed by a supervisor or coworker."
 
 script_num = script_num + 1								'Increment by one
 ReDim Preserve script_array_R_to_Z(script_num)			'Resets the array to add one more element to it
@@ -551,19 +552,8 @@ script_array_R_to_Z(script_num).script_name 			= "Verifications needed"
 script_array_R_to_Z(script_num).file_name				= "NOTES - VERIFICATIONS NEEDED.vbs"
 script_array_R_to_Z(script_num).description				= "Template for when verifications are needed (enters each verification clearly)."
 
-script_num = script_num + 1								'Increment by one
-ReDim Preserve script_array_R_to_Z(script_num)			'Resets the array to add one more element to it
-Set script_array_R_to_Z(script_num) = new script		'Set this array element to be a new script. Script details below...
-script_array_R_to_Z(script_num).script_name 			= "Significant Change"
-script_array_R_to_Z(script_num).file_name				= "NOTES - SIGNIFICANT CHANGE.vbs"
-script_array_R_to_Z(script_num).description				= "Template for noting Significant Change information."
 
-script_num = script_num + 1								'Increment by one
-ReDim Preserve script_array_R_to_Z(script_num)			'Resets the array to add one more element to it
-Set script_array_R_to_Z(script_num) = new script		'Set this array element to be a new script. Script details below...
-script_array_R_to_Z(script_num).script_name 			= "Submit case for SNAP review"
-script_array_R_to_Z(script_num).file_name				= "NOTES - SUBMIT CASE FOR SNAP REVIEW.vbs"
-script_array_R_to_Z(script_num).description				= "Template for when a worker sends a case to be reviewed by a supervisor or coworker."
+
 
 '-------------------------------------------------------------------------------------------------------------------------LTC
 'Resetting the variable
@@ -663,6 +653,8 @@ Do
 	dialog NOTES_dialog
 
 	If ButtonPressed = 0 then stopscript
+    'Opening the SIR Instructions
+	IF buttonpressed = SIR_instructions_button then CreateObject("WScript.Shell").Run("https://www.dhssir.cty.dhs.state.mn.us/MAXIS/blzn/Script%20Instructions%20Wiki/Notes%20scripts.aspx")
 Loop until 	ButtonPressed <> SIR_instructions_button and _
 			ButtonPressed <> a_to_c_button and _
 			ButtonPressed <> d_to_f_button and _
