@@ -215,13 +215,9 @@ BeginDialog REVS_scrubber_time_dialog, 0, 0, 291, 270, "REVS Scrubber Time Dialo
   GroupBox 5, 100, 275, 105, "Additional Appointment Block"
 EndDialog
 
-
-
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 'Connects to BlueZone
 EMConnect ""
-
-
 
 'creating month plus 1 and plus 2
 cm_plus_1 = dateadd("M", 1, date)
@@ -387,8 +383,10 @@ objExcel.cells(1, privileged_case_col).Font.Bold 	= TRUE
 IF appointments_per_time_slot = "" THEN appointments_per_time_slot = 1
 IF alt_appointments_per_time_slot = "" THEN alt_appointments_per_time_slot = 1
 
-'Checking for MAXIS
-CALL check_for_MAXIS(false)
+'Checking for an active MAXIS session
+DO 
+	CALL check_for_password(are_we_passworded_out)
+Loop until are_we_passworded_out = false	
 
 'We need to get back to SELF and manually update the footer month
 back_to_SELF
