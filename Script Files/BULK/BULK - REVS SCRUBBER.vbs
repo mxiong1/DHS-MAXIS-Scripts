@@ -503,7 +503,6 @@ DO 'Loops until there are no more cases in the Excel list
 		SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 		objRange.Delete
 		excel_row = excel_row - 1
-		msgbox priv_case_list
 
 	ELSE		'For all of the cases that aren't privileged...
 
@@ -524,20 +523,31 @@ DO 'Loops until there are no more cases in the Excel list
 
 		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
 		IF CSR_mo = left(cm_plus_2, 2) and CSR_yr = right(cm_plus_2, 2) THEN recert_status = "NO"
-		IF recert_mo = left(cm_plus_2, 2) and recert_yr = right(cm_plus_2, 2) THEN recert_status = "YES"
-
+		IF recert_mo = left(cm_plus_2, 2) and recert_yr = right(cm_plus_2, 2) THEN 
+			recert_status = "YES"
+		ELSE
+			recert_status = "NO"	'some cases were sliping through the logic, so this worked to catch the other NO cases'
+		END IF 
+		
 		'If it's not a recert, delete it from the excel list and move on with our lives
 		IF recert_status = "NO" THEN
 			Call navigate_to_MAXIS_screen("STAT", "PROG")
 			EMReadScreen MFIP_prog_check, 2, 6, 67		'checking for an active MFIP case
 			EMReadScreen MFIP_status_check, 4, 6, 74
-			If MFIP_prog_check <> "MF" AND MFIP_status_check <> "ACTV" THEN 	'if MFIP is active, then case will not be deleted.
-				SET objRange = objExcel.Cells(excel_row, 1).EntireRow
-				objRange.Delete				'all other cases that are not due for a recert will be deleted
-				excel_row = excel_row - 1
-			END If
-		END IF
-	END IF
+			If MFIP_prog_check = "MF" AND MFIP_status_check = "ACTV" THEN 	'if MFIP is active, then case will not be deleted.
+				recert_status = "YES"
+			ELSE 
+				recert_status = "NO"
+			END IF 
+		END IF	
+		
+		'If it's not a recert, delete it from the excel list and move on with our lives
+		If recert_status = "NO" then
+			SET objRange = objExcel.Cells(excel_row, 1).EntireRow
+			objRange.Delete				'all other cases that are not due for a recert will be deleted
+			excel_row = excel_row - 1	
+		END If
+	END IF 
 	STATS_counter = STATS_counter + 1						'adds one instance to the stats counter
 	excel_row = excel_row + 1
 LOOP UNTIL objExcel.Cells(excel_row, case_number_col).value = ""	'looping until the list of cases to check for recert is complete
@@ -632,7 +642,6 @@ NEXT
 objExcel.Columns(worker_number_col).autofit()
 objExcel.Columns(case_number_col).autofit()
 objExcel.Columns(interview_time_col).autofit()
-
 
 
 'VbOKCancel allows the user to review and confirm the scheduled appointments prior to case notes, TIKL's and MEMOs being sent
