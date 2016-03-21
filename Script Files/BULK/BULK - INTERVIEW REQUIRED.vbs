@@ -69,12 +69,6 @@ EndDialog
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
 
-'creating current month date for REVS panel
-current_month = "0" & left(DatePart("M", date, 2))
-current_year = right(DatePart("YYYY", date, 2))
-
-msgbox current_month & current_year
-
 'DISPLAYS DIALOG
 DO
 	DO
@@ -138,8 +132,8 @@ EMWriteScreen "________", 18, 43
 'writing in REPT panel and footer selection
 If footer_selection = "Current month plus two" then
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
-	EMWriteScreen current_month, 20, 43
-	EMWriteScreen current_year, 20, 46
+	EMWriteScreen CM_mo, 20, 43
+	EMWriteScreen CM_yr, 20, 46
 	transmit
 	msgbox "current month transmit"
 	EMWriteScreen footer_month, 20, 55
