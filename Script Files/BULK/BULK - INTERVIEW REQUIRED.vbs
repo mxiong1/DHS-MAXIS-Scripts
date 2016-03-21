@@ -69,6 +69,12 @@ EndDialog
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
 
+'creating current month date for REVS panel
+current_month = "0" & left(DatePart("M", date, 2))
+current_year = right(DatePart("YYYY", date, 2))
+
+msgbox current_month & current_year
+
 'DISPLAYS DIALOG
 DO
 	DO
@@ -83,12 +89,6 @@ DO
 	LOOP until err_msg = ""
 	CALL check_for_password(are_we_passworded_out)
 Loop until are_we_passworded_out = false	
-
-'creating current month date for REVS panel
-current_month = DatePart("M", date)
-IF len(current_month) = 1 THEN current_month = "0" & current_month
-current_year = DatePart("YYYY", date)
-current_year = right(current_year, 2)
 
 'If all workers are selected, the script will go to REPT/USER, and load all of the workers into an array. Otherwise it'll create a single-object "array" just for simplicity of code.
 If all_workers_check = checked then
@@ -108,6 +108,7 @@ Else
 	'Splitting array for use by the for...next statement
 	worker_array = split(worker_array, ", ")
 End if
+msgbox "array complete"
 
 'creating dates for the footer_selection variable
 If footer_selection = "Current month" then
@@ -140,6 +141,7 @@ If footer_selection = "Current month plus two" then
 	EMWriteScreen current_month, 20, 43
 	EMWriteScreen current_year, 20, 46
 	transmit
+	msgbox "current month transmit"
 	EMWriteScreen footer_month, 20, 55
 	EMWriteScreen footer_year, 20, 58
 ELSE
@@ -148,6 +150,7 @@ ELSE
 	EMWriteScreen footer_year, 20, 46
 END IF
 transmit
+msgbox footer_month
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -156,8 +159,8 @@ Set objWorkbook = objExcel.Workbooks.Add()
 objExcel.DisplayAlerts = True
 
 'formatting excel file with columns for case number and phone numbers
-objExcel.cells(1, 1).Value = "Worker Number"
-objExcel.cells(1, 2).Value = "CASE NUMBER"
+objExcel.cells(1, 1).Value = "CASE NUMBER"
+objExcel.cells(1, 2).Value = "Worker Number"
 IF add_phone_numbers_check = 1 then 
 	objExcel.Cells(1, 3).Value = "Phone Number 1"
 	objExcel.Cells(1, 4).Value = "Phone Number 2"
@@ -173,7 +176,7 @@ NEXT
 'Grabbing case numbers from REVS for requested worker
 Excel_row = 2	'Declaring variable prior to do...loops
 
-'Splitting array for use by the for...next statement
+'start of the FOR...next loop
 For each worker in worker_array
 	If trim(worker) = "" then exit for
 	worker_ID = trim(worker)
@@ -186,40 +189,47 @@ For each worker in worker_array
 	'writing in the worker number in the correct col
 	EMWriteScreen worker_ID, 21, worker_ID_col
 	transmit
-
+	msgbox worker_ID
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
-	Do		
+	Do
 		MAXIS_row = 7	'Setting or resetting this to look at the top of the list
 		DO	'All of this loops until MAXIS_row = 19
 			'Reading case information (case number, SNAP status, and cash status)
+			msgbox MAXIS_row
 			EMReadScreen case_number, 8, MAXIS_row, 6
 			EMReadScreen SNAP_status, 1, MAXIS_row, 45
-			EMReadScreen worker_number, 7, 21, worker_ID_col
 			If REPT_panel = "REVS" then
 				EMReadScreen cash_status, 1, MAXIS_row, 34
 			ELSE
 				EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
 			END IF
+			msgbox cash_status
 			'Navigates though until it runs out of case numbers to read
 			IF case_number = "        " then exit do
 
 			'For some goofy reason the dash key shows up instead of the space key. No clue why. This will turn them into null variables.
 			If cash_status = "-" 	then cash_status = ""
 			If SNAP_status = "-" 	then SNAP_status = ""
+			
 			'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
-			If trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" then add_case_info_to_Excel = True
-			If trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" then add_case_info_to_Excel = True
-
+			If ( ( trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" ) or ( trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" ) ) and reviews_total <= max_reviews_per_worker then
+				add_case_info_to_Excel = True
+				reviews_total = reviews_total + 1
+			End if
+			
 			'Adding the case to Excel
 			If add_case_info_to_Excel = True then
-				objExcel.cells(excel_row, 1).Value = worker_number
-				ObjExcel.Cells(excel_row, 2).Value = case_number
+				ObjExcel.Cells(excel_row, 2).value = worker_number
+				ObjExcel.Cells(excel_row, 1).value = case_number
 				excel_row = excel_row + 1
 			End if
+			
 			'On the next loop it must look to the next row
 			MAXIS_row = MAXIS_row + 1
-			'Clearing variables before next loop				add_case_info_to_Excel = ""
+			'Clearing variables before next loop
+			add_case_info_to_Excel = ""
 			case_number = ""
+			
 		Loop until MAXIS_row = 19		'Last row in REPT/REVS
 		'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
 		PF8
@@ -227,24 +237,16 @@ For each worker in worker_array
 	Loop until last_page_check = "THIS IS THE LAST PAGE"
 NEXT
 
-'Goes to STAT/REVW
-back_to_self		'back to self'
-footer_month = "" 'resetting footer month and year'
-footer_year = ""
-EMWriteScreen "________", 18, 43	'clears case number'
-EMWriteScreen current_month, 20, 43	'enters footer month and year since issues arise with current month plus two'
-EMWriteScreen current_year, 20, 46
-transmit
-
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
 excel_row = 2		'Resets the variable to 2, as it needs to look through all of the cases on the Excel sheet!
 
 DO 'Loops until there are no more cases in the Excel list
 	'Grabs the case number
-	case_number = objExcel.cells(excel_row, 2).Value
+	case_number = objExcel.cells(excel_row, 1).Value
 	If case_number = "" then exit do
+	'Goes to STAT/REVW
 	CALL navigate_to_MAXIS_screen("STAT", "REVW")
-	
+
 	'Checking for PRIV cases.
 	EMReadScreen priv_check, 6, 24, 14 'If it can't get into the case needs to skip
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
@@ -287,14 +289,13 @@ DO 'Loops until there are no more cases in the Excel list
 		END IF
 
 		'If it's not a recert, delete it from the excel list and move on with our lives
-		'If it's not a recert, delete it from the excel list and move on with our lives
 		If recert_status = "NO" then
 			SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 			objRange.Delete				'all other cases that are not due for a recert will be deleted
 			excel_row = excel_row - 1
 		ELSEIF recert_status = "YES" then	'if yes, then grabs the phone numbers from the ADDR panel'
 			EMReadScreen worker_number, 7, 21, 21
-			objExcel.cells(excel_row, 1).Value = worker_number
+			objExcel.cells(excel_row, 2).Value = worker_number
 		END IF
 		IF add_phone_numbers_check = 1 then 
 			Call navigate_to_MAXIS_screen("STAT", "ADDR")
