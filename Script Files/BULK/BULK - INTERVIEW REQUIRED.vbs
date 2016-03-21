@@ -51,19 +51,22 @@ STATS_manualtime = 39			 'manual run time in seconds
 STATS_denomination = "C"		 'C is for each case
 'END OF stats block==============================================================================================
 
-BeginDialog appointment_required_dialog, 0, 0, 286, 115, "Appointment required dialog"
-  DropListBox 70, 10, 60, 15, "REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
-  DropListBox 185, 10, 90, 15, "Select one..."+chr(9)+"Current month"+chr(9)+"Current month plus one"+chr(9)+"Current month plus two", footer_selection
-  EditBox 70, 30, 205, 15, worker_number
-  CheckBox 5, 75, 155, 10, "Select all active workers in the agency", all_workers_check
-  CheckBox 5, 90, 155, 10, "Add client phone number(s) to list", add_phone_numbers_check
+BeginDialog appointment_required_dialog, 0, 0, 286, 125, "Appointment required dialog"
+  DropListBox 70, 10, 60, 15, "REPT/ACTV"+chr(9)+"REPT/REVS"+chr(9)+"REPT/REVW", REPT_panel
+  DropListBox 190, 10, 90, 15, "Current month"+chr(9)+"Current month plus one"+chr(9)+"Current month plus two", footer_selection
+  EditBox 70, 30, 210, 15, worker_number
+  CheckBox 5, 70, 155, 10, "Select all active workers in the agency", all_workers_check
+  EditBox 225, 80, 25, 15, review_month
+  EditBox 255, 80, 25, 15, review_year
+  CheckBox 5, 100, 125, 10, "Add client phone number(s) to list", add_phone_numbers_check
   ButtonGroup ButtonPressed
-    OkButton 170, 90, 50, 15
-    CancelButton 225, 90, 50, 15
-  Text 5, 50, 265, 15, "Enter 7 digits of each, (ex: x######). If entering multiple workers, separate each with a comma."
-  Text 135, 15, 45, 10, "Time period:"
+    OkButton 175, 105, 50, 15
+    CancelButton 230, 105, 50, 15
   Text 5, 35, 60, 10, "Worker number(s):"
   Text 5, 15, 55, 10, "Create list from:"
+  Text 140, 15, 45, 10, "Time period:"
+  Text 5, 85, 215, 10, "To filter by specific review month in REPT/ACTV, enter month/year:"
+  Text 5, 50, 265, 15, "Enter 7 digits of each, (ex: x######). If entering multiple workers, separate each with a comma."
 EndDialog
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
@@ -76,9 +79,10 @@ DO
 		Dialog appointment_required_dialog
 		If ButtonPressed = 0 then StopScript
 		If worker_number = "" and all_workers_check = 0 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."
-		If footer_selection = "Select one..." then err_msg = err_msg & vbNewLine & "* Select the time period for your list."
 		If REPT_panel = "REPT/REVW" and footer_selection = "Current month plus two" then err_msg = err_msg & VbNewLine & "* This is time period is not an option REPT/REVW. Please select a new time period."
 		If (REPT_panel = "REPT/REVS" and footer_selection = "Current month plus two" and datePart("d", date) < 16) then err_msg = err_msg & VbNewLine & "* This is not a valid time period for REPT/REVS until the 16th of the month. Please select a new time period."
+		IF len(review_month) > 2 or isnumeric(review_month) = FALSE THEN err_msg = err_msg & vbCr & "You must enter a valid 2 digit review month."
+		IF len(review_year) > 2 or isnumeric(review_year) = FALSE THEN err_msg = err_msg & vbCr & "You must enter a valid 2 digit review year."
 		IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine
 	LOOP until err_msg = ""
 	CALL check_for_password(are_we_passworded_out)
@@ -190,7 +194,12 @@ For each worker in worker_array
 		DO	'All of this loops until MAXIS_row = 19
 			'Reading case information (case number, SNAP status, and cash status)
 			msgbox MAXIS_row
-			EMReadScreen case_number, 8, MAXIS_row, 6
+			IF REPT_panel = "REPT/ACTV" then 
+				case_number_col = 12
+			ELSE 
+				case_number_col = 6
+			END IF 
+			EMReadScreen case_number, 8, MAXIS_row, case_number_col
 			EMReadScreen SNAP_status, 1, MAXIS_row, 45
 			If REPT_panel = "REVS" then
 				EMReadScreen cash_status, 1, MAXIS_row, 34
