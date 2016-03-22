@@ -76,8 +76,8 @@ CM_plus_2_yr =  right(                  DatePart("yyyy",        DateAdd("m", 2, 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
 worker_number = "x127ez5, x127ez4"
-REPT_panel = "REPT/REVS"
-footer_selection = "Current month plus two"
+REPT_panel = "REPT/REVW"
+footer_selection = "Current month plus one"
 
 'DISPLAYS DIALOG
 DO
@@ -141,8 +141,8 @@ If footer_selection = "Current month plus two" then
 	EMWriteScreen REPT_year, 20, 58
 ELSE
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
-	EMWriteScreen REPT_month, 20, 43
-	EMWriteScreen REPT_year, 20, 46
+	EMWriteScreen REPT_month, 20, 55
+	EMWriteScreen REPT_year, 20, 58
 END IF
 transmit
 
@@ -162,6 +162,11 @@ IF add_phone_numbers_check = 1 then
 END IF 
 objExcel.cells(1, 6).Value = "Privileged Cases"
 
+FOR i = 1 to 6		'formatting the cells'
+	objExcel.Cells(1, i).Font.Bold = True		'bold font'
+	objExcel.Columns(i).AutoFit()						'sizing the colums'
+NEXT
+
 'Grabbing case numbers from REVS for requested worker
 Excel_row = 2	'Declaring variable prior to do...loops
 
@@ -178,7 +183,7 @@ For each worker in worker_array
 	'writing in the worker number in the correct col
 	EMWriteScreen worker_number, 21, worker_ID_col
 	transmit
-	
+
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
 	
 	DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
@@ -189,7 +194,7 @@ For each worker in worker_array
 			EMReadScreen SNAP_status, 1, MAXIS_row, 45
 			IF REPT_panel = "REVS" then
 				EMReadScreen cash_status, 1, MAXIS_row, 34
-			ELSE
+			ELSEif REPT_panel = "REVW" then 
 				EMReadScreen cash_status, 1, MAXIS_row, 35
 			END IF 
 			
@@ -327,10 +332,9 @@ ObjExcel.Cells(1, 8).Value = now
 ObjExcel.Cells(2, 7).Value = "Query runtime (in seconds):"	'Goes back one, as this is on the next row
 ObjExcel.Cells(2, 8).Value = timer - query_start_time
 
-
-FOR i = 1 to 8	'formatting the cells'
-	objExcel.Cells(1, i).Font.Bold = True		'bold font
-	objExcel.Columns(i).AutoFit()			'sizing the columns
+FOR i = 1 to 8		'formatting the cells'
+	objExcel.Cells(1, i).Font.Bold = True		'bold font'
+	objExcel.Columns(i).AutoFit()						'sizing the colums'
 NEXT
 
 STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
