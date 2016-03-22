@@ -45,10 +45,6 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 END IF
 'END FUNCTIONS LIBRARY BLOCK================================================================================================
 
-'date variable for CM plus 2
-CM_plus_2_mo =  right("0" &             DatePart("m",           DateAdd("m", 2, date)            ), 2)
-CM_plus_2_yr =  right(                  DatePart("yyyy",        DateAdd("m", 2, date)            ), 2)
-
 'Required for statistical purposes==========================================================================================
 STATS_counter = 1			     'sets the stats counter at one
 STATS_manualtime = 39			 'manual run time in seconds
@@ -73,7 +69,16 @@ BeginDialog appointment_required_dialog, 0, 0, 286, 125, "Appointment required d
   Text 5, 50, 265, 15, "Enter 7 digits of each, (ex: x######). If entering multiple workers, separate each with a comma."
 EndDialog
 
+'date variables----------------------------------------------------------------------------------------------------
+CM_plus_2_mo =  right("0" &             DatePart("m",           DateAdd("m", 2, date)            ), 2)
+CM_plus_2_yr =  right(                  DatePart("yyyy",        DateAdd("m", 2, date)            ), 2)
+
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
+EMConnect ""		'Connects to BlueZone
+worker_number = "x127ez5, x127ez4"
+REPT_panel = "REPT/REVS"
+footer_selection = "Current month plus two"
+
 'DISPLAYS DIALOG
 DO
 	DO
@@ -88,24 +93,26 @@ DO
 	CALL check_for_password(are_we_passworded_out)
 Loop until are_we_passworded_out = false	
 
+'Starting the query start time (for the query runtime at the end)
+query_start_time = timer
+
 'If all workers are selected, the script will go to REPT/USER, and load all of the workers into an array. Otherwise it'll create a single-object "array" just for simplicity of code.
 If all_workers_check = checked then
 	call create_array_of_all_active_x_numbers_in_county(worker_array, two_digit_county_code)
 Else
 	x1s_from_dialog = split(worker_number, ",")	'Splits the worker array based on commas
-
-	'Need to add the worker_county_code to each one
+	'formatting array
 	For each x1_number in x1s_from_dialog
 		If worker_array = "" then
-			worker_array = trim(ucase(x1_number))		'replaces worker_county_code if found in the typed x1 number
+			worker_array = trim(x1_number)		'replaces worker_county_code if found in the typed x1 number
 		Else
 			worker_array = worker_array & ", " & trim(ucase(x1_number)) 'replaces worker_county_code if found in the typed x1 number
 		End if
 	Next
-
-	'Splitting array for use by the for...next statement
+	'Split worker_array
 	worker_array = split(worker_array, ", ")
 End if
+msgbox worker_number
 
 'creating dates for the footer_selection variable
 If footer_selection = "Current month" then
@@ -146,8 +153,8 @@ Set objWorkbook = objExcel.Workbooks.Add()
 objExcel.DisplayAlerts = True
 
 'formatting excel file with columns for case number and phone numbers
-objExcel.cells(1, 1).Value = "CASE NUMBER"
-objExcel.cells(1, 2).Value = "Worker Number"
+objExcel.cells(1, 1).Value = "Worker Number"
+objExcel.cells(1, 2).Value = "Case Number"
 IF add_phone_numbers_check = 1 then 
 	objExcel.Cells(1, 3).Value = "Phone Number 1"
 	objExcel.Cells(1, 4).Value = "Phone Number 2"
@@ -155,18 +162,13 @@ IF add_phone_numbers_check = 1 then
 END IF 
 objExcel.cells(1, 6).Value = "Privileged Cases"
 
-FOR i = 1 to 6		'formatting the cells'
-	objExcel.Cells(1, i).Font.Bold = True		'bold font'
-	objExcel.Columns(i).AutoFit()				'sizing the columns'
-NEXT
-
 'Grabbing case numbers from REVS for requested worker
 Excel_row = 2	'Declaring variable prior to do...loops
 
 'start of the FOR...next loop
 For each worker in worker_array
 	If trim(worker) = "" then exit for
-	worker_ID = trim(worker)
+	worker_number = trim(worker)
 	
 	If REPT_panel = "REPT/ACTV" then 'THE REPT PANEL HAS THE worker NUMBER IN DIFFERENT COLUMNS. THIS WILL DETERMINE THE CORRECT COLUMN FOR THE worker NUMBER TO GO
 		worker_ID_col = 13
@@ -174,7 +176,7 @@ For each worker in worker_array
 		worker_ID_col = 6
 	End if
 	'writing in the worker number in the correct col
-	EMWriteScreen worker_ID, 21, worker_ID_col
+	EMWriteScreen worker_number, 21, worker_ID_col
 	transmit
 	
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
@@ -225,7 +227,6 @@ For each worker in worker_array
 		PF8
 		EMReadScreen last_page_check, 21, 24, 2	'checking to see if we're at the end
 	Loop until last_page_check = "THIS IS THE LAST PAGE"
-	
 next
 
 'resets the case number and footer month/year back to the CM (REVS for current month plus two has is going to be a problem otherwise)
@@ -310,12 +311,7 @@ DO 'Loops until there are no more cases in the Excel list
 	excel_row = excel_row + 1
 LOOP UNTIL objExcel.Cells(excel_row, 2).value = ""	'looping until the list of cases to check for recert is complete
 
-'Formatting the columns to autofit after they are all finished being created.
-FOR i = 1 to 6		'formatting the cells'
- 	objExcel.Cells(1, i).Font.Bold = True		'bold font'
- 	objExcel.Columns(i).AutoFit()						'sizing the colums'
- NEXT
-
+'POST MAXIS ACTIONS----------------------------------------------------------------------------------------------------
 'Creating the list of privileged cases and adding to the spreadsheet
 prived_case_array = split(priv_case_list, "|")
 excel_row = 2
@@ -323,6 +319,18 @@ excel_row = 2
 FOR EACH case_number in prived_case_array
 	objExcel.cells(excel_row, 6).value = case_number
 	excel_row = excel_row + 1
+NEXT
+
+'Query date/time/runtime info
+ObjExcel.Cells(1, 7).Value = "Query date and time:"	'Goes back one, as this is on the next row
+ObjExcel.Cells(1, 8).Value = now
+ObjExcel.Cells(2, 7).Value = "Query runtime (in seconds):"	'Goes back one, as this is on the next row
+ObjExcel.Cells(2, 8).Value = timer - query_start_time
+
+
+FOR i = 1 to 8	'formatting the cells'
+	objExcel.Cells(1, i).Font.Bold = True		'bold font
+	objExcel.Columns(i).AutoFit()			'sizing the columns
 NEXT
 
 STATS_counter = STATS_counter - 1 'removes one from the count since 1 is counted at the begining (because counting :p)
