@@ -45,6 +45,10 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 END IF
 'END FUNCTIONS LIBRARY BLOCK================================================================================================
 
+'date variable for CM plus 2
+CM_plus_2_mo =  right("0" &             DatePart("m",           DateAdd("m", 2, date)            ), 2)
+CM_plus_2_yr =  right(                  DatePart("yyyy",        DateAdd("m", 2, date)            ), 2)
+
 'Required for statistical purposes==========================================================================================
 STATS_counter = 1			     'sets the stats counter at one
 STATS_manualtime = 39			 'manual run time in seconds
@@ -70,8 +74,6 @@ BeginDialog appointment_required_dialog, 0, 0, 286, 125, "Appointment required d
 EndDialog
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
-EMConnect ""		'Connects to BlueZone
-
 'DISPLAYS DIALOG
 DO
 	DO
@@ -81,8 +83,6 @@ DO
 		If worker_number = "" and all_workers_check = 0 then err_msg = err_msg & vbNewLine & "* Enter a valid worker number."
 		If REPT_panel = "REPT/REVW" and footer_selection = "Current month plus two" then err_msg = err_msg & VbNewLine & "* This is time period is not an option REPT/REVW. Please select a new time period."
 		If (REPT_panel = "REPT/REVS" and footer_selection = "Current month plus two" and datePart("d", date) < 16) then err_msg = err_msg & VbNewLine & "* This is not a valid time period for REPT/REVS until the 16th of the month. Please select a new time period."
-		IF len(review_month) > 2 or isnumeric(review_month) = FALSE THEN err_msg = err_msg & vbCr & "You must enter a valid 2 digit review month."
-		IF len(review_year) > 2 or isnumeric(review_year) = FALSE THEN err_msg = err_msg & vbCr & "You must enter a valid 2 digit review year."
 		IF err_msg <> "" THEN MsgBox "*** NOTICE!!! ***" & vbNewLine & err_msg & vbNewLine
 	LOOP until err_msg = ""
 	CALL check_for_password(are_we_passworded_out)
@@ -106,26 +106,17 @@ Else
 	'Splitting array for use by the for...next statement
 	worker_array = split(worker_array, ", ")
 End if
-msgbox "array complete"
 
 'creating dates for the footer_selection variable
 If footer_selection = "Current month" then
-	footer_month = DatePart("M", date)
-	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month
-	footer_year = DatePart("YYYY", date)
-	footer_year = right(footer_year, 2)
+	REPT_month = CM_mo
+	REPT_year = CM_yr
 ELSEif footer_selection = "Current month plus one" then
-	footer_month = dateadd("M", 1, date)
-	footer_month = datePart("M", footer_month)
-	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month
-	footer_year = DatePart("YYYY", date)
-	footer_year = right(footer_year, 2)
+	REPT_month = CM_plus_1_mo 
+	REPT_year = CM_plus_1_yr
 ELSEIF footer_selection = "Current month plus two" then
-	footer_month = dateadd("M", 2, date)
-	footer_month = datePart("M", footer_month)
-	IF len(footer_month) = 1 THEN footer_month = "0" & footer_month
-	footer_year = DatePart("YYYY", date)
-	footer_year = right(footer_year, 2)
+	REPT_month = CM_plus_2_mo
+	REPT_year = CM_plus_2_yr
 END IF
 
 'We need to get back to SELF and manually update the footer month
@@ -139,16 +130,14 @@ If footer_selection = "Current month plus two" then
 	EMWriteScreen CM_mo, 20, 43
 	EMWriteScreen CM_yr, 20, 46
 	transmit
-	msgbox "current month transmit"
-	EMWriteScreen footer_month, 20, 55
-	EMWriteScreen footer_year, 20, 58
+	EMWriteScreen REPT_month, 20, 55
+	EMWriteScreen REPT_year, 20, 58
 ELSE
 	Call navigate_to_MAXIS_screen("REPT", REPT_panel)
-	EMWriteScreen footer_month, 20, 43
-	EMWriteScreen footer_year, 20, 46
+	EMWriteScreen REPT_month, 20, 43
+	EMWriteScreen REPT_year, 20, 46
 END IF
 transmit
-msgbox footer_month
 
 'Opening the Excel file, (now that the dialog is done)
 Set objExcel = CreateObject("Excel.Application")
@@ -178,7 +167,7 @@ Excel_row = 2	'Declaring variable prior to do...loops
 For each worker in worker_array
 	If trim(worker) = "" then exit for
 	worker_ID = trim(worker)
-
+	
 	If REPT_panel = "REPT/ACTV" then 'THE REPT PANEL HAS THE worker NUMBER IN DIFFERENT COLUMNS. THIS WILL DETERMINE THE CORRECT COLUMN FOR THE worker NUMBER TO GO
 		worker_ID_col = 13
 	Else
@@ -187,80 +176,90 @@ For each worker in worker_array
 	'writing in the worker number in the correct col
 	EMWriteScreen worker_ID, 21, worker_ID_col
 	transmit
-	msgbox worker_ID
+	
 	'THIS DO...LOOP DUMPS THE CASE NUMBER AND NAME OF EACH CLIENT INTO A SPREADSHEET
-	Do
+	
+	DO	'All of this loops until last_page_check = "THIS IS THE LAST PAGE"
 		MAXIS_row = 7	'Setting or resetting this to look at the top of the list
-		DO	'All of this loops until MAXIS_row = 19
+		DO		'All of this loops until MAXIS_row = 19
 			'Reading case information (case number, SNAP status, and cash status)
-			msgbox MAXIS_row
-			IF REPT_panel = "REPT/ACTV" then 
-				case_number_col = 12
-			ELSE 
-				case_number_col = 6
-			END IF 
-			EMReadScreen case_number, 8, MAXIS_row, case_number_col
+			EMReadScreen case_number, 8, MAXIS_row, 6
 			EMReadScreen SNAP_status, 1, MAXIS_row, 45
-			If REPT_panel = "REVS" then
+			IF REPT_panel = "REVS" then
 				EMReadScreen cash_status, 1, MAXIS_row, 34
 			ELSE
-				EMReadScreen cash_status, 1, MAXIS_row, 35		'REPT/ACTV cash status is on col 35, REVS is on col 34 (Thanks MAXIS)
-			END IF
-			msgbox cash_status
+				EMReadScreen cash_status, 1, MAXIS_row, 35
+			END IF 
+			
 			'Navigates though until it runs out of case numbers to read
-			IF case_number = "        " then exit do
-
+			IF trim(case_number) = "" then exit do
+			
 			'For some goofy reason the dash key shows up instead of the space key. No clue why. This will turn them into null variables.
 			If cash_status = "-" 	then cash_status = ""
 			If SNAP_status = "-" 	then SNAP_status = ""
+			If HC_status = "-" 		then HC_status = ""
 			
 			'Using if...thens to decide if a case should be added (status isn't blank and respective box is checked)
 			If ( ( trim(SNAP_status) = "N" or trim(SNAP_status) = "I" or trim(SNAP_status) = "U" ) or ( trim(cash_status) = "N" or trim(cash_status) = "I" or trim(cash_status) = "U" ) ) and reviews_total <= max_reviews_per_worker then
 				add_case_info_to_Excel = True
-				reviews_total = reviews_total + 1
+			Else 
+				add_case_info_to_Excel = False
 			End if
 			
 			'Adding the case to Excel
 			If add_case_info_to_Excel = True then
-				ObjExcel.Cells(excel_row, 2).value = worker_number
-				ObjExcel.Cells(excel_row, 1).value = case_number
+				ObjExcel.Cells(excel_row, 1).value = worker_number
+				ObjExcel.Cells(excel_row, 2).value = case_number
 				excel_row = excel_row + 1
 			End if
 			
 			'On the next loop it must look to the next row
 			MAXIS_row = MAXIS_row + 1
+
 			'Clearing variables before next loop
 			add_case_info_to_Excel = ""
 			case_number = ""
-			
 		Loop until MAXIS_row = 19		'Last row in REPT/REVS
+	
 		'Because we were on the last row, or exited the do...loop because the case number is blank, it PF8s, then reads for the "THIS IS THE LAST PAGE" message (if found, it exits the larger loop)
 		PF8
-		EMReadScreen last_page_check, 21, 24, 02
+		EMReadScreen last_page_check, 21, 24, 2	'checking to see if we're at the end
 	Loop until last_page_check = "THIS IS THE LAST PAGE"
-NEXT
+	
+next
+
+'resets the case number and footer month/year back to the CM (REVS for current month plus two has is going to be a problem otherwise)
+back_to_self
+EMwritescreen "________", 18, 43
+EMWriteScreen CM_mo, 20, 43
+EMWriteScreen CM_yr, 20, 46
+transmit		
 
 'Now the script will go through STAT/REVW for each case and check that the case is at CSR or ER and remove the cases that are at CSR from the list.
 excel_row = 2		'Resets the variable to 2, as it needs to look through all of the cases on the Excel sheet!
 
 DO 'Loops until there are no more cases in the Excel list
+	recert_status = "NO"
 	'Grabs the case number
-	case_number = objExcel.cells(excel_row, 1).Value
-	If case_number = "" then exit do
+	case_number = objExcel.cells(excel_row, 2).value
 	'Goes to STAT/REVW
-	CALL navigate_to_MAXIS_screen("STAT", "REVW")
-
+	Call navigate_to_MAXIS_screen("STAT", "REVW")
+	
 	'Checking for PRIV cases.
 	EMReadScreen priv_check, 6, 24, 14 'If it can't get into the case needs to skip
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
+
 		priv_case_list = priv_case_list & "|" & case_number
-		SET objRange = objExcel.Cells(excel_row, 6).EntireRow
+		SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 		objRange.Delete
 		excel_row = excel_row - 1
+		
 	ELSE		'For all of the cases that aren't privileged...
+		
 		'Looks at review details
 		EMwritescreen "x", 5, 58
 		Transmit
+
 		DO
 			EMReadScreen SNAP_popup_check, 7, 5, 43
 		LOOP until SNAP_popup_check = "Reports"
@@ -270,49 +269,46 @@ DO 'Loops until there are no more cases in the Excel list
 		EMReadScreen CSR_yr, 2, 9, 32
 		EMReadScreen recert_mo, 2, 9, 64
 		EMReadScreen recert_yr, 2, 9, 70
-		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
-		If recert_mo = "__" and recert_yr = "__" then recert_status = "NO" 	'in case there is no SNAP, will check for MFIP being active, if not active, then will remove from list in next IF...THEN statement.
-		IF CSR_mo = left(footer_month, 2) and CSR_yr = right(footer_year, 2) THEN recert_status = "NO"
-		IF recert_mo = left(footer_month, 2) and recert_yr = right(footer_year, 2) THEN
-			recert_status = "YES"
-		ELSE
-			recert_status = "NO"
-		END IF
 
-		'checking for ACTV MFIP'
+		'It then compares what it read to the previously established current month plus 2 and determines if it is a recert or not. If it is a recert we need an interview
+		IF CSR_mo = left(REPT_month, 2) and CSR_yr = right(REPT_year, 2) THEN recert_status = "NO"
+		IF recert_mo = left(REPT_month, 2) and recert_yr = right(REPT_year, 2) THEN recert_status = "YES"
+		
+		'If it's not a recert, delete it from the excel list and move on with our lives
 		IF recert_status = "NO" THEN
 			Call navigate_to_MAXIS_screen("STAT", "PROG")
+			MFIP_prog_check = ""
+			MFIP_status_check = ""
 			EMReadScreen MFIP_prog_check, 2, 6, 67		'checking for an active MFIP case
 			EMReadScreen MFIP_status_check, 4, 6, 74
-			If MFIP_prog_check = "MF" AND MFIP_status_check = "ACTV" THEN 'if MFIP is active, then case will not be deleted.
-				recert_status = "YES"
-			ELSE
-				recert_status = "NO"
+			If MFIP_prog_check = "MF" THEN
+				IF MFIP_status_check <> "ACTV" THEN				'if MFIP is active, then case will not be deleted.
+					SET objRange = objExcel.Cells(excel_row, 1).EntireRow
+					objRange.Delete				'all other cases that are not due for a recert will be deleted
+					excel_row = excel_row - 1
+				END IF
+			ELSE 
+				SET objRange = objExcel.Cells(excel_row, 1).EntireRow
+				objRange.Delete				'all other cases that are not due for a recert will be deleted
+				excel_row = excel_row - 1
 			END If
 		END IF
-
-		'If it's not a recert, delete it from the excel list and move on with our lives
-		If recert_status = "NO" then
-			SET objRange = objExcel.Cells(excel_row, 1).EntireRow
-			objRange.Delete				'all other cases that are not due for a recert will be deleted
-			excel_row = excel_row - 1
-		ELSEIF recert_status = "YES" then	'if yes, then grabs the phone numbers from the ADDR panel'
-			EMReadScreen worker_number, 7, 21, 21
-			objExcel.cells(excel_row, 2).Value = worker_number
-		END IF
-		IF add_phone_numbers_check = 1 then 
-			Call navigate_to_MAXIS_screen("STAT", "ADDR")
-			EMReadScreen phone_number_one, 16, 17, 43	' if phone numbers are blank it doesn't add them to EXCEL
-			If phone_number_one <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 3).Value = phone_number_one
-			EMReadScreen phone_number_two, 16, 18, 43
-			If phone_number_two <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 4).Value = phone_number_two
-			EMReadScreen phone_number_three, 16, 19, 43
-			If phone_number_three <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 5).Value = phone_number_three	
-		END IF
 	END IF
-	STATS_counter = STATS_counter + 1                      'adds one instance to the stats counter
+	
+	'if user selects to add phone numbers to the Excel list
+	IF add_phone_numbers_check = 1 then 
+		Call navigate_to_MAXIS_screen("STAT", "ADDR")
+		EMReadScreen phone_number_one, 16, 17, 43	' if phone numbers are blank it doesn't add them to EXCEL
+		If phone_number_one <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 3).Value = phone_number_one
+		EMReadScreen phone_number_two, 16, 18, 43
+		If phone_number_two <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 4).Value = phone_number_two
+		EMReadScreen phone_number_three, 16, 19, 43
+		If phone_number_three <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 5).Value = phone_number_three	
+	END IF
+		
+	STATS_counter = STATS_counter + 1						'adds one instance to the stats counter
 	excel_row = excel_row + 1
-LOOP UNTIL objExcel.Cells(excel_row, 1).Value = ""	'looping until the list of cases to check for recert is complete
+LOOP UNTIL objExcel.Cells(excel_row, 2).value = ""	'looping until the list of cases to check for recert is complete
 
 'Formatting the columns to autofit after they are all finished being created.
 FOR i = 1 to 6		'formatting the cells'
