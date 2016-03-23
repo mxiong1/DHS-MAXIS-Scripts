@@ -303,7 +303,11 @@ DO 'Loops until there are no more cases in the Excel list
 	
 	'if user selects to add phone numbers to the Excel list
 	IF add_phone_numbers_check = 1 then 
-		Call navigate_to_MAXIS_screen("STAT", "ADDR")
+		Do
+			Call navigate_to_MAXIS_screen("STAT", "ADDR")
+			EMReadScreen ADDR_panel_check, 4, 2, 44
+			If ADDR_panel_check <> "ADDR" then PF10 
+		Loop until ADDR_panel_check = "ADDR"	
 		EMReadScreen phone_number_one, 16, 17, 43	' if phone numbers are blank it doesn't add them to EXCEL
 		If phone_number_one <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 3).Value = phone_number_one
 		EMReadScreen phone_number_two, 16, 18, 43
