@@ -75,9 +75,6 @@ CM_plus_2_yr =  right(                  DatePart("yyyy",        DateAdd("m", 2, 
 
 'THE SCRIPT-------------------------------------------------------------------------------------------------------------------------
 EMConnect ""		'Connects to BlueZone
-worker_number = "x127ez5, x127ez4"
-REPT_panel = "REPT/REVW"
-footer_selection = "Current month plus one"
 
 'DISPLAYS DIALOG
 DO
@@ -112,7 +109,6 @@ Else
 	'Split worker_array
 	worker_array = split(worker_array, ", ")
 End if
-msgbox worker_number
 
 'creating dates for the footer_selection variable
 If footer_selection = "Current month" then
@@ -129,7 +125,12 @@ END IF
 'We need to get back to SELF and manually update the footer month
 back_to_self
 REPT_panel = right(REPT_panel, 4)	're-establishing variable to exclude all but the last 4 characters to the right
+'clears all data from the SELF screen
+EMWriteScreen "____", 16, 43
 EMWriteScreen "________", 18, 43
+EMWriteScreen"____", 21, 70
+transmit
+transmit
 
 'writing in REPT panel and footer selection
 If footer_selection = "Current month plus two" then
@@ -254,14 +255,11 @@ DO 'Loops until there are no more cases in the Excel list
 	'Checking for PRIV cases.
 	EMReadScreen priv_check, 6, 24, 14 'If it can't get into the case needs to skip
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
-
 		priv_case_list = priv_case_list & "|" & case_number
 		SET objRange = objExcel.Cells(excel_row, 1).EntireRow
-		objRange.Delete
-		excel_row = excel_row - 1
+		objRange.Delete	
 		
 	ELSE		'For all of the cases that aren't privileged...
-		
 		'Looks at review details
 		EMwritescreen "x", 5, 58
 		Transmit
@@ -300,10 +298,18 @@ DO 'Loops until there are no more cases in the Excel list
 			END If
 		END IF
 	END IF
-	
-	'if user selects to add phone numbers to the Excel list
-	IF add_phone_numbers_check = 1 then 
+		
+	STATS_counter = STATS_counter + 1						'adds one instance to the stats counter
+	excel_row = excel_row + 1
+LOOP UNTIL objExcel.Cells(excel_row, 2).value = ""	'looping until the list of cases to check for recert is complete
+
+'If user selects to add phone numbers to the Excel list
+IF add_phone_numbers_check = 1 then 
+	Excel_row = 2
+	Do
 		Do
+			'Grabs the case number
+			case_number = objExcel.cells(excel_row, 2).value
 			Call navigate_to_MAXIS_screen("STAT", "ADDR")
 			EMReadScreen ADDR_panel_check, 4, 2, 44
 			If ADDR_panel_check <> "ADDR" then PF10 
@@ -314,11 +320,9 @@ DO 'Loops until there are no more cases in the Excel list
 		If phone_number_two <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 4).Value = phone_number_two
 		EMReadScreen phone_number_three, 16, 19, 43
 		If phone_number_three <> "( ___ ) ___ ____" then objExcel.cells(excel_row, 5).Value = phone_number_three	
-	END IF
-		
-	STATS_counter = STATS_counter + 1						'adds one instance to the stats counter
-	excel_row = excel_row + 1
-LOOP UNTIL objExcel.Cells(excel_row, 2).value = ""	'looping until the list of cases to check for recert is complete
+		excel_row = excel_row + 1
+	LOOP UNTIL objExcel.Cells(excel_row, 2).value = ""	'looping until the list of cases to check for recert is complete
+End if
 
 'POST MAXIS ACTIONS----------------------------------------------------------------------------------------------------
 'Creating the list of privileged cases and adding to the spreadsheet
