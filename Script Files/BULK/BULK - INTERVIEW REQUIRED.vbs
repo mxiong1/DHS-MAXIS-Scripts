@@ -255,10 +255,10 @@ DO 'Loops until there are no more cases in the Excel list
 	'Checking for PRIV cases.
 	EMReadScreen priv_check, 6, 24, 14 'If it can't get into the case needs to skip
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
+		msgbox "priv case" & case_number
 		priv_case_list = priv_case_list & "|" & case_number
 		SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 		objRange.Delete	
-		
 	ELSE		'For all of the cases that aren't privileged...
 		'Looks at review details
 		EMwritescreen "x", 5, 58
@@ -285,6 +285,14 @@ DO 'Loops until there are no more cases in the Excel list
 			MFIP_status_check = ""
 			EMReadScreen MFIP_prog_check, 2, 6, 67		'checking for an active MFIP case
 			EMReadScreen MFIP_status_check, 4, 6, 74
+			PF3		'exits PROG to prommpt HCRE if HCRE insn't complete
+			Do
+				EMReadscreen HCRE_panel_check, 4, 2, 50
+				If HCRE_panel_check = "HCRE" then 
+					PF10	'exists edit mode in cases where HCRE isn't complete for a member
+					PF3
+				END IF
+			Loop until HCRE_panel_check <> "HCRE"
 			If MFIP_prog_check = "MF" THEN
 				IF MFIP_status_check <> "ACTV" THEN				'if MFIP is active, then case will not be deleted.
 					SET objRange = objExcel.Cells(excel_row, 1).EntireRow
@@ -295,7 +303,7 @@ DO 'Loops until there are no more cases in the Excel list
 				SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 				objRange.Delete				'all other cases that are not due for a recert will be deleted
 				excel_row = excel_row - 1
-			END If
+			END If 
 		END IF
 	END IF
 		
