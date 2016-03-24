@@ -303,6 +303,15 @@ DO 'Loops until there are no more cases in the Excel list
 	excel_row = excel_row + 1
 LOOP UNTIL objExcel.Cells(excel_row, 2).value = ""	'looping until the list of cases to check for recert is complete
 
+'Creating the list of privileged cases and adding to the spreadsheet
+prived_case_array = split(priv_case_list, "|")
+excel_row = 2
+
+FOR EACH case_number in prived_case_array
+	objExcel.cells(excel_row, 6).value = case_number
+	excel_row = excel_row + 1
+NEXT
+
 'If user selects to add phone numbers to the Excel list
 IF add_phone_numbers_check = 1 then 
 	Excel_row = 2
@@ -325,15 +334,6 @@ IF add_phone_numbers_check = 1 then
 End if
 
 'POST MAXIS ACTIONS----------------------------------------------------------------------------------------------------
-'Creating the list of privileged cases and adding to the spreadsheet
-prived_case_array = split(priv_case_list, "|")
-excel_row = 2
-
-FOR EACH case_number in prived_case_array
-	objExcel.cells(excel_row, 6).value = case_number
-	excel_row = excel_row + 1
-NEXT
-
 'Query date/time/runtime info
 ObjExcel.Cells(1, 7).Value = "Query date and time:"	'Goes back one, as this is on the next row
 ObjExcel.Cells(1, 8).Value = now
