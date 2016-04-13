@@ -68,7 +68,7 @@ EMConnect ""
 'Shows dialog
 Do
 	Do
-		Dialog Housing_grant_exemption_finder_dialog
+		Dialog Housing_grant_overview
 		If buttonpressed = cancel then stopscript
 		If (all_workers_check = 0 AND worker_number = "") then MsgBox "Please enter at least one worker number." 	'allows user to select the all workers check, and not have worker number be ""
 	LOOP until all_workers_check = 1 or worker_number <> ""
@@ -141,28 +141,29 @@ ObjExcel.Cells(1, 4).Value = "REF #"
 ObjExcel.Cells(1, 5).Value = "EMPS"
 ObjExcel.Cells(1, 6).Value = "DISA DATES"
 ObjExcel.Cells(1, 7).Value = "MFIP BEGIN DATE"
-ObjExcel.Cells(1, 8).Value = current_month					'using date calculations above, list will generate a rolling 12 months of issuances
-ObjExcel.Cells(1, 9).Value = current_month_minus_one
-ObjExcel.Cells(1, 10).Value = current_month_minus_two
-ObjExcel.Cells(1, 11).Value = current_month_minus_three
-ObjExcel.Cells(1, 12).Value = current_month_minus_four
-ObjExcel.Cells(1, 13).Value = current_month_minus_five
-ObjExcel.Cells(1, 14).Value = current_month_minus_six
-ObjExcel.Cells(1, 15).Value = current_month_minus_seven
-ObjExcel.Cells(1, 16).Value = current_month_minus_eight
-ObjExcel.Cells(1, 17).Value = current_month_minus_nine
-ObjExcel.Cells(1, 18).Value = current_month_minus_ten
-ObjExcel.Cells(1, 19).Value = current_month_minus_eleven
-objExcel.cells(1, 20).Value = "Privileged Cases"
+ObjExcel.Cells(1, 8).Value = "SUBSIDIZED?"
+ObjExcel.Cells(1, 9).Value = "SHELTER COSTS "
+ObjExcel.Cells(1, 10).Value = current_month					'using date calculations above, list will generate a rolling 12 months of issuances
+ObjExcel.Cells(1, 11).Value = current_month_minus_one
+ObjExcel.Cells(1, 12).Value = current_month_minus_two
+ObjExcel.Cells(1, 13).Value = current_month_minus_three
+ObjExcel.Cells(1, 14).Value = current_month_minus_four
+ObjExcel.Cells(1, 15).Value = current_month_minus_five
+ObjExcel.Cells(1, 16).Value = current_month_minus_six
+ObjExcel.Cells(1, 17).Value = current_month_minus_seven
+ObjExcel.Cells(1, 18).Value = current_month_minus_eight
+ObjExcel.Cells(1, 19).Value = current_month_minus_nine
+ObjExcel.Cells(1, 20).Value = current_month_minus_ten
+ObjExcel.Cells(1, 21).Value = current_month_minus_eleven
+objExcel.cells(1, 22).Value = "Privileged Cases"
 
-FOR i = 1 to 20		'formatting the cells'
+FOR i = 1 to 22		'formatting the cells'
 	objExcel.Cells(1, i).Font.Bold = True		'bold font'
 	objExcel.Columns(i).AutoFit()				'sizing the columns'
 NEXT
 
-
 'Below, use the "[blank]_col" variable to recall which col you set for which option.
-col_to_use = 21 'Starting with 21 because cols 1-20 are already used
+col_to_use = 23 'Starting with 22 because cols 1-20 are already used
 
 'If all workers are selected, the script will go to REPT/USER, and load all of the workers into an array. Otherwise it'll create a single-object "array" just for simplicity of code.
 If all_workers_check = checked then
@@ -201,18 +202,13 @@ For each worker in worker_array
 			MAXIS_row = 7	'Sets the row to start searching in MAXIS for
 			Do
 				EMReadScreen emps_status, 2, MAXIS_row, 52		'Reading Emps Status & only searches for exempt emps status codes
-				If  emps_status = "02" OR emps_status = "07" OR _
-					emps_status = "08" OR emps_status = "12" OR _
-					emps_status = "23" OR emps_status = "24" OR _
-					emps_status = "27" OR emps_status = "15" OR _
-					emps_status = "18" OR emps_status = "30" OR _
-					emps_status = "33" THEN
-						EMReadScreen case_number, 8, MAXIS_row, 6  	'Reading case number
-						EMReadScreen emps_status, 2, MAXIS_row, 52	'Reading emps_status
-						'if more than one HH member is on the list then non-MEMB 01's don't have a case number listed, this fixes that
-						If trim(case_number) = "" AND trim(client_name) <> "" then 			'if there's a name and no case number
-							EMReadScreen alt_case_number, 8, MAXIS_row - 1, 6				'then it reads the row above
-							case_number = alt_case_number									'restablishes that in this instance, alt case number = case number'
+				EMReadScreen case_number, 8, MAXIS_row, 6  	'Reading case number
+				EMReadScreen emps_status, 2, MAXIS_row, 52	'Reading emps_status
+				
+				'if more than one HH member is on the list then non-MEMB 01's don't have a case number listed, this fixes that
+				If trim(case_number) = "" AND trim(client_name) <> "" then 			'if there's a name and no case number
+				EMReadScreen alt_case_number, 8, MAXIS_row - 1, 6				'then it reads the row above
+							case_number = alt_case_number									're-establishes that in this instance, alt case number = case number'
 						END IF
 
 						'Doing this because sometimes BlueZone registers a "ghost" of previous data when the script runs. This checks against an array and stops if we've seen this one before.
