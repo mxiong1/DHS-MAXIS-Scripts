@@ -139,10 +139,10 @@ ObjExcel.Cells(1, 2).Value = "CASE NUMBER"
 ObjExcel.Cells(1, 3).Value = "NAME"
 ObjExcel.Cells(1, 4).Value = "REF #"
 ObjExcel.Cells(1, 5).Value = "EMPS"
-ObjExcel.Cells(1, 6).Value = "DISA DATES"
-ObjExcel.Cells(1, 7).Value = "MFIP BEGIN DATE"
+ObjExcel.Cells(1, 6).Value = "MFIP BEGIN DATE"
+ObjExcel.Cells(1, 7).Value = "DISA DATES"
 ObjExcel.Cells(1, 8).Value = "SUBSIDIZED?"
-ObjExcel.Cells(1, 9).Value = "SHELTER COSTS "
+ObjExcel.Cells(1, 9).Value = "SHELTER PAID TO"
 ObjExcel.Cells(1, 10).Value = current_month					'using date calculations above, list will generate a rolling 12 months of issuances
 ObjExcel.Cells(1, 11).Value = current_month_minus_one
 ObjExcel.Cells(1, 12).Value = current_month_minus_two
@@ -209,21 +209,20 @@ For each worker in worker_array
 				If trim(case_number) = "" AND trim(client_name) <> "" then 			'if there's a name and no case number
 				EMReadScreen alt_case_number, 8, MAXIS_row - 1, 6				'then it reads the row above
 							case_number = alt_case_number									're-establishes that in this instance, alt case number = case number'
-						END IF
-
-						'Doing this because sometimes BlueZone registers a "ghost" of previous data when the script runs. This checks against an array and stops if we've seen this one before.
-						If trim(case_number) <> "" and instr(all_case_numbers_array, case_number) <> 0 then exit do
-						all_case_numbers_array = trim(all_case_numbers_array & " " & case_number)
-						If trim(case_number) = "" and trim(client_name) = "" then exit do			'Exits do if we reach the end
-
-					'add case/case information to Excel
-        			ObjExcel.Cells(excel_row, 1).Value = worker
-        			ObjExcel.Cells(excel_row, 2).Value = case_number
-    				ObjExcel.Cells(excel_row, 5).Value = emps_status
-					excel_row = excel_row + 1	'moving excel row to next row'
-					'Blanking out variable
-					case_number = ""
 				END IF
+
+				'Doing this because sometimes BlueZone registers a "ghost" of previous data when the script runs. This checks against an array and stops if we've seen this one before.
+				If trim(case_number) <> "" and instr(all_case_numbers_array, case_number) <> 0 then exit do
+				all_case_numbers_array = trim(all_case_numbers_array & " " & case_number)
+				If trim(case_number) = "" and trim(client_name) = "" then exit do			'Exits do if we reach the end
+
+				'add case/case information to Excel
+        		ObjExcel.Cells(excel_row, 1).Value = worker
+        		ObjExcel.Cells(excel_row, 2).Value = case_number
+    			ObjExcel.Cells(excel_row, 5).Value = emps_status
+				excel_row = excel_row + 1	'moving excel row to next row'
+				'Blanking out variable
+				case_number = ""
 				MAXIS_row = MAXIS_row + 1	'adding one row to search for in MAXIS
 			Loop until MAXIS_row = 19
 			PF8
@@ -232,7 +231,7 @@ For each worker in worker_array
 	End if
 next
 
-'Now the script goes back into MFCM and grabs the member # and client name, then cchecks the potentially exempt members for subsidized housing
+'Now the script goes back into MFCM and grabs the member # and client name, then checks the potentially exempt members for subsidized housing
 excel_row = 2           're-establishing the row to start checking the members for
 Do
 	case_number = objExcel.cells(excel_row, 2).Value	're-establishing the case number to use for the case
@@ -267,26 +266,8 @@ Do
 
 	ObjExcel.Cells(excel_row, 3).Value = client_name		'adds client name to Excel list
     ObjExcel.Cells(excel_row, 4).Value = memb_number		'adds client member number to Excel list
-
-    'checking member for subsidized housing
-    Call navigate_to_MAXIS_screen("STAT", "SHEL")
-    EMWriteScreen memb_number, 20, 76						'enters member number as this is a person based panel
-    transmit
-    EmReadScreen sub_housing, 1, 6, 46
-    If sub_housing <> "Y" then 				'if member doesn't have sub housing, then the sub housing fiater is not necessary
-        'Deleting the blank results to clean up the spreadsheet
-        SET objRange = objExcel.Cells(excel_row, 1).EntireRow
-        objRange.Delete
-        excel_row = excel_row - 1		'does not advance one row if the case gets deleted
-    END IF
-    excel_row = excel_row + 1
-LOOP UNTIL objExcel.Cells(excel_row, 1).Value = ""	'Loops until there are no more cases in the Excel list
-
-'Now the script checks for MFIP start date, disa dates
-excel_row = 2           're-establishing the row to start checking the members for
-DO
-	case_number = objExcel.cells(excel_row, 2).Value	're-establishing the case numbers
-	If case_number = "" then exit do					'if case number is blank then exits do loop
+	
+	'Now the script checks for MFIP start date
 	Call navigate_to_MAXIS_screen("STAT", "PROG")
 	'reading the MFIP start date
 	EMReadScreen prog_one, 2, 6, 67				'checking 1st line of CASH PROG for elig MFIP
@@ -301,8 +282,9 @@ DO
 		EMReadScreen elig_begin_date_two, 8, 7, 44
 		elig_begin_date = elig_begin_date_two
 	END IF
+	
 	'enters elig begin dates into Excel
-	ObjExcel.Cells(excel_row, 7).Value = elig_begin_date
+	ObjExcel.Cells(excel_row, 6).Value = elig_begin_date
 
 	'Because some cases don't have HCRE dates listed, so when you try to go past PROG the script gets caught up. Do...loop handles this instance.
 	PF3		'exits PROG to prompt HCRE if HCRE isn't complete
@@ -313,8 +295,8 @@ DO
 			PF3
 		END IF
 	Loop until HCRE_panel_check <> "HCRE"		'repeats until case is not in the HCRE panel
-
-	'STAT DISA PORTION
+	
+	'STAT DISA dates into Excel
 	Call navigate_to_MAXIS_screen("STAT", "DISA")
 	EMWriteScreen memb_number, 20, 76				'enters member number
 	transmit
@@ -325,8 +307,22 @@ DO
 	disa_end_date = Replace(disa_end_date," ","/")
 	disa_dates = trim(disa_start_date) & " - " & trim(disa_end_date)
 	If disa_dates = "__/__/____ - __/__/____" then disa_dates = "NO DISA INFO"
+	
 	'adding disa date to Excel
-	ObjExcel.Cells(excel_row, 6).Value = disa_dates
+	ObjExcel.Cells(excel_row, 7).Value = disa_dates
+	
+    'checking member for subsidized housing
+    Call navigate_to_MAXIS_screen("STAT", "SHEL")
+    EMWriteScreen memb_number, 20, 76						'enters member number as this is a person based panel
+    transmit
+    EmReadScreen sub_housing, 1, 6, 46
+    EMReadScreen shelter_paid, 25, 7, 50
+	sub_housing = Replace(sub_housing, "_", "")		'replace underscores with blanks
+	shelter_paid = Replace(shelter_paid, "_", "")		'replace underscores with blanks
+	
+	'enters sub housing codes and 
+	ObjExcel.Cells(excel_row, 8).Value = sub_housing
+	ObjExcel.Cells(excel_row, 9).Value = shelter_paid
 
 	excel_row = excel_row + 1	'moving excel row to next row'
 LOOP UNTIL objExcel.Cells(excel_row, 1).Value = ""	'looping until the list is complete
@@ -353,7 +349,7 @@ DO
 	current_month_minus_nine, current_month_minus_ten, current_month_minus_eleven)
 
 	'searching for the housing grant issued on the INQX/INQD screen(s)
-	excel_col = 8		'establishing the col to start at
+	excel_col = 10		'establishing the col to start at
 
 	For each issuance_month in issuance_months_array 		'For next searches issuances for all rolling 12 months
 		DO
@@ -364,8 +360,9 @@ DO
 			row = 6				'establishing the row to start searching for issuance'
 			DO
 				EMReadScreen housing_grant, 2, row, 19		'searching for housing grant issuance
+				EMReadScreen payment_status, 1, row, 26
 				If housing_grant = "  " then exit do		'exits the do loop once the end of the issuances is reached
-				IF housing_grant = "HG" then
+				IF (housing_grant = "HG" and payment_status <> "C" and payment_status <> "T" and payment_status <> "X") then
 					'reading the housing grant information
 					EMReadScreen HG_amt_issued, 7, row, 40
 					EMReadScreen HG_month, 2, row, 73
@@ -407,7 +404,7 @@ prived_case_array = split(priv_case_list, "|")
 excel_row = 2				'establishes the row to start writing the PRIV cases to
 
 FOR EACH case_number in prived_case_array
-	objExcel.cells(excel_row, 20).value = case_number		'inputs cases into Excel
+	objExcel.cells(excel_row, 22).value = case_number		'inputs cases into Excel
 	excel_row = excel_row + 1								'increases the row
 NEXT
 
