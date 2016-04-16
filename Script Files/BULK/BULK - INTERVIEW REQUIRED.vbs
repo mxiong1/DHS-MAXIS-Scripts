@@ -255,7 +255,6 @@ DO 'Loops until there are no more cases in the Excel list
 	'Checking for PRIV cases.
 	EMReadScreen priv_check, 6, 24, 14 'If it can't get into the case needs to skip
 	IF priv_check = "PRIVIL" THEN 'Delete priv cases from excel sheet, save to a list for later
-		msgbox "priv case" & case_number
 		priv_case_list = priv_case_list & "|" & case_number
 		SET objRange = objExcel.Cells(excel_row, 1).EntireRow
 		objRange.Delete	
