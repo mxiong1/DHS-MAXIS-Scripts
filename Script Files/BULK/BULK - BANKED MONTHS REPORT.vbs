@@ -294,7 +294,7 @@ Do
 			End If 
 			If banked_months_clients_excel_file_path = "" then err_msg = err_msg & vbNewLine & "Use the Browse Button to select the file that has your client data"
 			If err_msg <> "" Then MsgBox err_msg
-		* add total of counted months and abawd counted months on spreadsheet 	'Call File_Selection_System_Dialog(list_reported_banked_month_clients)  'References the function above to have the user seach for their file'
+		'Call File_Selection_System_Dialog(list_reported_banked_month_clients)  'References the function above to have the user seach for their file'
 		Loop until err_msg = ""
 		If objExcel = "" Then call excel_open(banked_months_clients_excel_file_path, True, True, ObjExcel, objWorkbook)  'opens the selected excel file'
 		month_list = ""
@@ -308,6 +308,7 @@ Do
 	CALL check_for_password(are_we_passworded_out)			'function that checks to ensure that the user has not passworded out of MAXIS, allows user to password back into MAXIS						
 Loop until are_we_passworded_out = false					'loops until user passwords back in					
 
+'Warning message and option to continue or stop the script if the person note option is not correct. This will help prevent duplicate person notes from being made.
 If developer_mode_checkbox = checked then 
 	person_noting = Msgbox("You have selected this script to NOT add a Person Note." & vbNewLine & "Note that this is the only way we have to track months a client has used a Banked Month." & vbNewLine & _
     "Check the instructions for further details on this option.", vbOkCancel + vbExclamation, "Person notes will NOT be added")
@@ -459,48 +460,52 @@ list_done_msgbox = MsgBox ("The script has finished compiling the list of client
 For item = 0 to UBound(Banked_Month_Client_Array, 2)
 	case_number = Banked_Month_Client_Array(case_num,item)	'Case number is set for each loop as it is used in the FuncLib functions'
 	If Banked_Month_Client_Array(send_to_DHS, item) = TRUE Then
-		call navigate_to_MAXIS_screen ("ELIG", "FS")
-		EMReadScreen fs_version, 8, 3, 3
-		If fs_version = "UNAPPROV" Then
-			EMReadScreen vers_number, 1, 2, 19
-			If vers_number = "1" Then
-				Banked_Month_Client_Array(send_to_DHS, item) = FALSE
-				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "SNAP not approved in " & footer_month & "/" & footer_year & " | "
-			End If
-			EMWriteScreen "0" & (abs(vers_number) - 1), 19, 78
-			transmit
-		ElseIf fs_version = "        " Then
-			Banked_Month_Client_Array(send_to_DHS, item) = FALSE
-			Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No ELIG/FS version exists in " & footer_month & "/" & footer_year & " | "
-		End If
-		elig_maxis_row = 7
 		Do
-			EMReadScreen clt_on_snap, 2, elig_maxis_row, 10
-			IF clt_on_snap = Banked_Month_Client_Array(memb_num,item) Then
-				EMReadScreen pers_elig, 8, elig_maxis_row, 57
-				IF pers_elig <> "ELIGIBLE" Then
+			call navigate_to_MAXIS_screen ("ELIG", "FS")
+			EMReadScreen fs_version, 8, 3, 3
+			If fs_version = "UNAPPROV" Then
+				EMReadScreen vers_number, 1, 2, 19
+				If vers_number = "1" Then
 					Banked_Month_Client_Array(send_to_DHS, item) = FALSE
-					Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client listed as Ineligible for SNAP on ELIG/FS for " & footer_month & "/" & footer_year & " | "
-				End If
-			ElseIf clt_on_snap = "  " Then
+					Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "SNAP not approved in " & footer_month & "/" & footer_year & " | "
+					End If
+				EMWriteScreen "0" & (abs(vers_number) - 1), 19, 78
+				transmit
+			ElseIf fs_version = "        " Then
 				Banked_Month_Client_Array(send_to_DHS, item) = FALSE
-				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client not listed on ELIG/FS for " &  footer_month & "/" & footer_year & " | "
-			Else
-				elig_maxis_row = elig_maxis_row + 1
-				If elig_maxis_row = 19 Then
-					PF8
-					elig_maxis_row = 7
-				End If
+				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No ELIG/FS version exists in " & footer_month & "/" & footer_year & " | "
 			End If
-		Loop until clt_on_snap = Banked_Month_Client_Array(memb_num, item) OR Banked_Month_Client_Array(send_to_DHS,item) = FALSE
-		EMWriteScreen "FSB2", 19, 70
-		transmit
-		EMReadScreen fs_prorated, 8, 11,40
-		IF fs_prorated = "Prorated" Then
-			'MsgBox "SNAP is prorated in this month for case # " & Banked_Month_Client_Array(case_num,item) & ". This case will not be reported to DHS as using a Banked Month."
-			Banked_Month_Client_Array(send_to_DHS, item) = FALSE
-			Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "SNAP is prorated in " & footer_month & "/" & footer_year & " | "
-		End If
+		Loop until fs_version = "APPROVED" OR 
+		If fs_version = "APPROVED" Then
+			elig_maxis_row = 7
+			Do
+				EMReadScreen clt_on_snap, 2, elig_maxis_row, 10
+				IF clt_on_snap = Banked_Month_Client_Array(memb_num,item) Then
+					EMReadScreen pers_elig, 8, elig_maxis_row, 57
+					IF pers_elig <> "ELIGIBLE" Then
+						Banked_Month_Client_Array(send_to_DHS, item) = FALSE
+						Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client listed as Ineligible for SNAP on ELIG/FS for " & footer_month & "/" & footer_year & " | "
+						End If
+					ElseIf clt_on_snap = "  " Then
+						Banked_Month_Client_Array(send_to_DHS, item) = FALSE
+						Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client not listed on ELIG/FS for " &  footer_month & "/" & footer_year & " | "
+					Else
+						elig_maxis_row = elig_maxis_row + 1
+						If elig_maxis_row = 19 Then
+						PF8
+						elig_maxis_row = 7
+					End If
+				End If
+			Loop until clt_on_snap = Banked_Month_Client_Array(memb_num, item) OR Banked_Month_Client_Array(send_to_DHS,item) = FALSE
+			EMWriteScreen "FSB2", 19, 70
+			transmit
+			EMReadScreen fs_prorated, 8, 11,40
+			IF fs_prorated = "Prorated" Then
+				'MsgBox "SNAP is prorated in this month for case # " & Banked_Month_Client_Array(case_num,item) & ". This case will not be reported to DHS as using a Banked Month."
+				Banked_Month_Client_Array(send_to_DHS, item) = FALSE
+				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "SNAP is prorated in " & footer_month & "/" & footer_year & " | "
+			End If
+		END IF
 		'///////SCRIPT WILL NOW CHECK FOR POSSIBLE EXPEMTIONS FOR CLIENT'
 		'Age exemption'
 		call navigate_to_MAXIS_screen ("STAT", "MEMB")																					'Cient age is listed on STAT MEMB'
@@ -990,7 +995,7 @@ If need_word_doc  = TRUE Then
 	objNewExcel.Cells(1, 2).Value = "FIRST NAME"
 	objNewExcel.Cells(1, 2).Font.Bold = True
 	objNewExcel.Cells(1, 3).Value = "LAST NAME"
-	objNewExcel.Cells(1, 3).Font.Bold = True
+	objNewExcel.Cells(1, 3).Font.Bold = TrueS
 	objNewExcel.Cells(1, 4).Value = "Reason not reported to DHS"
 	objNewExcel.Cells(1, 4).Font.Bold = True
 	For	not_reported_clients = 0 to UBound(Banked_Month_Client_Array,2)
