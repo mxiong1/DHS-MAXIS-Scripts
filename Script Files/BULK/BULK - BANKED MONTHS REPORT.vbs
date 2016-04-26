@@ -3,8 +3,8 @@ name_of_script = "UTILITIES - MONTHLY BANKED MONTHS DATA GATHER.vbs"
 start_time = timer
 
 STATS_counter = 1                          'sets the stats counter at one
-'STATS_manualtime = ***                               'manual run time in seconds
-STATS_denomination = "C"       'C is for each CASE
+'STATS_manualtime = 219                    'manual run time in seconds
+STATS_denomination = "C"                   'C is for each CASE
 'END OF stats block==============================================================================================
 
 'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
